@@ -29,7 +29,7 @@ t = 0;
     Ucat_phy_x, Ucat_phy_y, Pressure_phy, ...
     Ucat_cal_x, Ucat_cal_y, Pressure_cal, ...
     Ubcs_x, Ubcs_y, Pbcs, dx, dy] = Init(M,N, M2, N2, M3, N3)
-
+plot_coor_in_grid;
 % It is the time integration scheme
 CALCULATE = 0;
 while CALCULATE

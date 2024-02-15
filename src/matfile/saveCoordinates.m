@@ -5,6 +5,7 @@ function saveCoordinates(filename, x, y)
     % Check if the file exists
     if isfile(filename)
         % If the file exists, open it in append mode
+        %delete(filename); 
         fid = fopen(filename, 'a');
         
         % Write the new data

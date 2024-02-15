@@ -21,26 +21,36 @@ opts.ExtraColumnsRule = "ignore";
 opts.EmptyLineRule = "read";
 
 % Import the data
-coord_ucat = readtable("G:\RunningCode\Original_Project\coor_ucat.csv", opts);
-coord_ucont_x = readtable("G:\RunningCode\Original_Project\coor_ucont_x.csv", opts);
-coord_ucont_y = readtable("G:\RunningCode\Original_Project\coor_ucont_y.csv", opts);
+coord_cell_centered = readtable("coor_cell_centered.csv", opts);
+coord_ghost = readtable("coor_ghost.csv", opts);
+coord_face_centered_x = readtable("coor_face_centered_x.csv", opts);
+coord_face_centered_y = readtable("coor_face_centered_y.csv", opts);
 
 %% Convert to output type
-x_ucat = coord_ucat.x;
-y_ucat = coord_ucat.y;
+x_cc = coord_cell_centered.x;
+y_cc = coord_cell_centered.y;
 
-x_ucont_x = coord_ucont_x.x;
-y_ucont_x = coord_ucont_x.y;
+x_gh = coord_ghost.x;
+y_gh = coord_ghost.y;
 
-x_ucont_y = coord_ucont_y.x;
-y_ucont_y = coord_ucont_y.y;
+x_fc_x = coord_face_centered_x.x;
+y_fc_x = coord_face_centered_x.y;
+
+x_fc_y = coord_face_centered_y.x;
+y_fc_y = coord_face_centered_y.y;
 
 %text(x_ucat, y_ucat, 'c', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'FontSize', 10);
-plot(x_ucat, y_ucat, 'p');
+plot(x_gh, y_gh, 's');
 hold on;
-plot(x_ucont_x, y_ucont_x, 'x');
-plot(x_ucont_y, y_ucont_y, 'o');
+plot(x_cc, y_cc, 's', 'MarkerFaceColor', 'red');
+plot(x_fc_x, y_fc_x, '>', 'MarkerFaceColor', 'cyan');
+plot(x_fc_y, y_fc_y, '^', 'MarkerFaceColor', 'yellow');
 grid on;
 
 %% Clear temporary variables
 clear opts tbl
+
+delete("coor_cell_centered.csv");
+delete("coor_ghost.csv");
+delete("coor_face_centered_x.csv");
+delete("coor_face_centered_y.csv");
