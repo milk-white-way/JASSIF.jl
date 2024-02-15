@@ -1,6 +1,5 @@
-function [Ucont_x, Ucont_y, Ucat_phy_x, Ucat_phy_y, Pressure_phy, Ucat_cal_x,  Ucat_cal_y, Pressure_cal, Ubcs_x, Ubcs_y, Pbcs, dx, dy] = Init(M, N, M2, N2, M3, N3)
+function [Ucont_x, Ucont_y, Ucat_phy_x, Ucat_phy_y, Pressure_phy, Ucat_cal_x,  Ucat_cal_y, Pressure_cal, Ubcs_x, Ubcs_y, Pbcs, dx, dy] = Init(M, N, M2, N2, M3, N3, L, U, VISUAL_GRID)
 
-L = 1; % Square domain
 dx = L / (M-1);
 dy = L / (N-1);
 
@@ -27,11 +26,13 @@ for i = 1:M
         x = (i-1) * dx;
         y = (j-1) * dy;
         
-        Ucat_phy_x(i,j) = 1;
-        Ucat_phy_y(i,j) = 1;
-        Pressure_phy(i,j) = 1;
+        Ucat_phy_x(i,j) = U * sin( 2*pi*x ) * cos( 2*pi*y );
+        Ucat_phy_y(i,j) = -U * cos( 2*pi*x ) * sin( 2*pi*y );
+        Pressure_phy(i,j) = -0.25 * U^2 * ( cos( 4*pi*x ) + cos( 4*pi*y ) );
 
-        saveCoordinates('coor_cell_centered.csv', x, y);
+        if VISUAL_GRID
+            saveCoordinates('coor_cell_centered.csv', x, y);
+        end
     end
 end
 
@@ -42,11 +43,13 @@ for i=1:M2
         y = (j-1-1) * dy;
 
         if i == 1 || i == M2 || j == 1 || j == N2
-            Ubcs_x(i,j) = 0;
-            Ubcs_y(i,j) = 0;
-            Pbcs(i,j) = 0;
+            Ubcs_x(i,j) = U * sin( 2*pi*x ) * cos( 2*pi*y );
+            Ubcs_y(i,j) = -U * cos( 2*pi*x ) * sin( 2*pi*y );
+            Pbcs(i,j) = -0.25 * U^2 * ( cos( 4*pi*x ) + cos( 4*pi*y ) );
 
-            saveCoordinates('coor_ghost.csv', x, y);
+            if VISUAL_GRID
+                saveCoordinates('coor_ghost.csv', x, y);
+            end
         end
 
     end
@@ -60,9 +63,11 @@ for i = 1:M3
         x = (i-2-0.5) * dx;
         y = (j-2) * dy;                
         
-        Ucont_x(i,j) =  0;
+        Ucont_x(i,j) =  U * sin( 2*pi*x ) * cos( 2*pi*y );
 
-        saveCoordinates('coor_face_centered_x.csv', x, y);
+        if VISUAL_GRID
+            saveCoordinates('coor_face_centered_x.csv', x, y);
+        end
         
     end
 end
@@ -74,10 +79,11 @@ for i = 1:M2
         x = (i-2) * dx;
         y = (j-2-0.5) * dy;        
         
+        Ucont_y(i,j) = -U * cos( 2*pi*x ) * sin( 2*pi*y );
 
-        Ucont_y(i,j) = 0;
-
-        saveCoordinates('coor_face_centered_y.csv', x, y);
+        if VISUAL_GRID
+            saveCoordinates('coor_face_centered_y.csv', x, y);
+        end
     end
 end
 

@@ -1,12 +1,11 @@
-function [Ucat_phy_x, Ucat_phy_y, Pressure_phy, dx, dy, t] = Main()
+function [Ucat_phy_x, Ucat_phy_y, Pressure_phy, dx, dy, t] = Main(M, N)
 
-clearvars; close all;
-
-format long;
+close all; format long;
+VISUAL_GRID = 0;
 
 % Variables' dimension in non-staggered grid
-M = 4;
-N = 4;
+%M = 8;
+%N = 8;
 
 % Ghost variables' dimension in non-staggered grid
 M2 = M+2;
@@ -16,10 +15,13 @@ N2 = N+2;
 M3 = M+3;
 N3 = N+3;
 
-dt = 0.05;
-MAXTIME = 200;%round(1/dt);
+dt = 1E-4;
+MAXTIME = 2;%round(1/dt);
 
-Re = 100;
+%% Physical parameters
+Re = 1;
+L = 1;
+U = 1;
 
 % Initialization process
 dU_x = 0;
@@ -28,8 +30,12 @@ t = 0;
 [Ucont_x, Ucont_y, ...
     Ucat_phy_x, Ucat_phy_y, Pressure_phy, ...
     Ucat_cal_x, Ucat_cal_y, Pressure_cal, ...
-    Ubcs_x, Ubcs_y, Pbcs, dx, dy] = Init(M,N, M2, N2, M3, N3)
-plot_coor_in_grid;
+    Ubcs_x, Ubcs_y, Pbcs, dx, dy] = Init(M, N, M2, N2, M3, N3, L, U, VISUAL_GRID);
+
+if VISUAL_GRID
+    plot_coor_in_grid;
+end
+myplot;
 % It is the time integration scheme
 CALCULATE = 0;
 while CALCULATE
@@ -66,5 +72,3 @@ while CALCULATE
         CALCULATE = 0;
     end
 end
-    
-
