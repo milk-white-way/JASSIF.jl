@@ -1,4 +1,4 @@
-function [Viscous_x Viscous_y] = Viscous_Flux(Ucat_x, Ucat_y, dx, dy, Re)
+function [Viscous_x, Viscous_y] = Viscous_Flux(Ucat_x, Ucat_y, dx, dy, Re)
 % Re is Reynolds number
 M = length(Ucat_x(:,1));
 N = length(Ucat_x(1,:));

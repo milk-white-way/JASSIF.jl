@@ -14,7 +14,7 @@ function [U_im_x, U_im_y] =  Momentum_Solver(dU_x , dU_y, Ucont_x, Ucont_y, Ucat
  x0.dx      = dx;
  x0.dy      = dy;
  x0.dt      = dt;
- x0.time       = t;
+ x0.time    = t;
  M = length(Ucont_x(:,1));
  N = length(Ucont_x(1,:));
  Momentum = 0;
@@ -65,23 +65,21 @@ fprintf('Momentum solver \n');
     
   fprintf('Complete Analytical Jacobian...\n');  
     
- %------------------  Momentum solvers -------------------------
- if Momentum == 0
-   [U_im_x U_im_y] =  Runge_Kutta(dU_x , dU_y, Ucont_x, Ucont_y, Ucat_x, Ucat_y, Ubcs_x, Ubcs_y, Pressure, Re, dx, dy, dt,t);        
- end
+%------------------  Momentum solvers -------------------------
+if Momentum == 0
+  [U_im_x, U_im_y] =  Runge_Kutta(dU_x, dU_y, Ucont_x, Ucont_y, Ucat_x, Ucat_y, Ubcs_x, Ubcs_y, Pressure, Re, dx, dy, dt, t);        
+end
  
- if Momentum == 1
-  [x iter] = Newton_Jacobian_Appx('RHS_Newton',pretype, x0, maxiters, tol); 
+if Momentum == 1
+  [x, iter] = Newton_Jacobian_Appx('RHS_Newton',pretype, x0, maxiters, tol); 
   U_im_x = x.U_im_x;
   U_im_y = x.U_im_y;
-  
- end
+end
  
- if Momentum == 2
-  [x iter] = JFNK('RHS_Newton',pretype,PRE,precfun, x0, maxiters, tol); 
+if Momentum == 2
+  [x, iter] = JFNK('RHS_Newton',pretype,PRE,precfun, x0, maxiters, tol); 
   U_im_x = x.U_im_x;
   U_im_y = x.U_im_y;
-  
- end
+end
 
  

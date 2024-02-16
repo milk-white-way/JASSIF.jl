@@ -1,6 +1,6 @@
-function [Conv_Flux_x Conv_Flux_y] = Convection(Ucont_x, Ucont_y, Ucat_x, Ucat_y,dx, dy)
+function [Conv_Flux_x, Conv_Flux_y] = Convective_Flux(Ucont_x, Ucont_y, Ucat_x, Ucat_y, dx, dy)
 
-% Fpx , Fpy are convective flux at the half node
+% Fpx, Fpy are convective flux at the half node
 %% Conv_Flux* are fluxes at the integer node
 M = length(Ucat_x(:,1));
 N = length(Ucat_x(1,:));
@@ -9,23 +9,22 @@ coef = 1/8;
 for i = 1:M-1
     for j = 1:N
         
-         ucon = Ucont_x(i,j) /  2;
+        ucon = Ucont_x(i,j) /  2;
          
-         up = ucon + abs(ucon);
-         um = ucon - abs(ucon);
+        up = ucon + abs(ucon);
+        um = ucon - abs(ucon);
          
-      if (i > 1 && i < M-1)
+        if (i > 1 && i < M-1)
             Fpx1(i,j) =  um * ( coef * ( - Ucat_x(i+2,j) - 2 * Ucat_x(i+1,j) + 3 * Ucat_x(i,j)  ) + Ucat_x(i+1,j)) +  up * ( coef * ( - Ucat_x(i-1,j) - 2 * Ucat_x(i,j)   + 3 * Ucat_x(i+1,j)) + Ucat_x(i,j));                          
-      else
-          if (i == 1)
-              Fpx1(i,j) =um * ( coef * ( - Ucat_x(i+2,j) - 2 * Ucat_x(i+1,j) + 3 * Ucat_x(i,j)  ) + Ucat_x(i+1,j)) +  up * ( coef * ( - Ucat_x(i,j)   - 2 * Ucat_x(i,j)   + 3 * Ucat_x(i+1,j)) + Ucat_x(i,j));                                                      
-          else
-                 if (i == M-1)
+        else
+            if (i == 1)
+                Fpx1(i,j) =um * ( coef * ( - Ucat_x(i+2,j) - 2 * Ucat_x(i+1,j) + 3 * Ucat_x(i,j)  ) + Ucat_x(i+1,j)) +  up * ( coef * ( - Ucat_x(i,j)   - 2 * Ucat_x(i,j)   + 3 * Ucat_x(i+1,j)) + Ucat_x(i,j));                                                      
+            else
+                if (i == M-1)
                     Fpx1(i,j) =  um * ( coef * ( - Ucat_x(i+1,j) - 2 * Ucat_x(i+1,j) + 3 * Ucat_x(i,j)  ) + Ucat_x(i+1,j)) + up * ( coef * ( - Ucat_x(i-1,j) - 2 * Ucat_x(i,j)   + 3 * Ucat_x(i+1,j)) + Ucat_x(i,j));                                             
-                 end % End of i == M-1
-          end % End of i == 1
-      end % End of internal nodes
-      
+                end % End of i == M-1
+            end % End of i == 1
+        end % End of internal nodes
     end
 end
 

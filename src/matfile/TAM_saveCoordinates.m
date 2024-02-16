@@ -1,4 +1,4 @@
-function saveCoordinates(filename, x, y)
+function TAM_saveCoordinates(filename, x, y)
     % Create a table with x and y
     T = table(x', y', 'VariableNames', {'x', 'y'});
     

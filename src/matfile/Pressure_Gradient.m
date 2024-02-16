@@ -1,4 +1,4 @@
-function [P_Gradient_x P_Gradient_y] = Pressure_Gradient(Pressure,dx,dy)
+function [P_Gradient_x, P_Gradient_y] = Pressure_Gradient(Pressure, dx, dy)
 
 M = length(Pressure(:,1));
 N = length(Pressure(1,:));
