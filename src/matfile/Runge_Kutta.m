@@ -1,7 +1,7 @@
-function [U_im_x U_im_y] = Runge_Kutta(dU_old_x, dU_old_y, Ucont_x, Ucont_y, Ucat_x, Ucat_y, Ubcs_x, Ubcs_y, Pressure, Re,dx,dy, dt,time)
+function [U_im_x, U_im_y] = Runge_Kutta(dU_old_x, dU_old_y, Ucont_x, Ucont_y, Ucat_x, Ucat_y, Ubcs_x, Ubcs_y, Pressure, Re, dx, dy, dt, time)
 
 
-pseudot = 0;
+pseudo_t = 0;
 alpha = [1/4; 1/3; 1/2; 1];
 
 % Assign first guess
@@ -12,7 +12,7 @@ tol = 1e-8;
 e   = 1;
 
 
- while (pseudot < 16 && e > tol)
+ while (pseudo_t < 16 && e > tol)
      
      U_im_x = U_p_x;
      U_im_y = U_p_y;  
@@ -39,9 +39,9 @@ e   = 1;
      U_p_x = U_im_x;
      U_p_y = U_im_y;    
      
-     pseudot = pseudot+1;     
+     pseudo_t = pseudo_t+1;     
     
-     fprintf('subitr = %d, Momentum convergence e = %8.6f \n',pseudot,e); 
+     fprintf('subitr = %d, Momentum convergence e = %8.6f \n',pseudo_t,e); 
  end 
  
 if (e > 1e-1)
