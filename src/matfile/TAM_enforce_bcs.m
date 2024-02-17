@@ -1,82 +1,98 @@
-fprintf('\nINFO: \t Enforcing boundary conditions... \n'); 
+fprintf('\nINFO: \tEnforcing boundary conditions... \n'); 
 
 if ENABLE_BC_PERIODIC
-    for ii = 2:M2-1
-            
-        jj = 1; 
-        Ubcs_x(ii, jj) = Ucat_phy_x(ii-1, N-1);
-        Ubcs_y(ii, jj) = Ucat_phy_y(ii-1, N-1);
-        Pbcs(ii, jj) = Pressure_phy(ii-1, N-1);
-        if ENABLE_DEBUGGING
-            fprintf('Ghost node (%d, %d) ', ii, jj);
-            fprintf('mirrors inner node (%d, %d)\n', ii-1, N-1);
+    %% North and South boundaries:
+    % North wall is the same as the South wall
+    PhysDom.Ubcs_x(1+Nghost:N+Nghost, Nghost+1) = PhysDom.Ucat_x(:, M);
+    PhysDom.Ubcs_y(1+Nghost:N+Nghost, Nghost+1) = PhysDom.Ucat_y(:, M);
+    PhysDom.Ubcs_x(1+Nghost:N+Nghost, M+Nghost) = PhysDom.Ucat_x(:, 1);
+    PhysDom.Ubcs_y(1+Nghost:N+Nghost, M+Nghost) = PhysDom.Ucat_y(:, 1);
+
+    % Halo region
+    for ii = ( 1+Nghost ):( M+Nghost )
+        for jj = 1:Nghost 
+            mirror_dis = 1 + Nghost - jj;
+            mirror_loc = N + Nghost - mirror_dis;
+            %mirror_loc = Nghost + 1 + mirror_dis;
+
+            HaloDom.Ucat_x(jj, ii) = CompDom.Ucat_x(mirror_loc, ii);
+            HaloDom.Ucat_y(jj, ii) = CompDom.Ucat_y(mirror_loc, ii);
+            HaloDom.Pressure(jj, ii) = CompDom.Pressure(mirror_loc, ii);
+
+            if ENABLE_DEBUGGING
+                fprintf('DEBUG: \tGhost node (%d, %d) ', ii, jj);
+                fprintf('mirrors inner node (%d, %d)\n', ii, mirror_loc);
+            end
         end
 
-        jj = N2; 
-        Ubcs_x(ii, jj) = Ucat_phy_x(ii-1, 2);
-        Ubcs_y(ii, jj) = Ucat_phy_y(ii-1, 2);
-        Pbcs(ii, jj) = Pressure_phy(ii-1, 2);
-        if ENABLE_DEBUGGING
-            fprintf('Ghost node (%d, %d) ', ii, jj);
-            fprintf('mirrors inner node (%d, %d)\n', ii-1, 2);
-        end
+        for jj = (N+Nghost+1):N2
+            mirror_dis = jj - (N + Nghost);
+            mirror_loc = 1 + Nghost + mirror_dis;
+            %mirror_loc = N + Nghost + mirror_dis;
 
+            HaloDom.Ucat_x(jj, ii) = CompDom.Ucat_x(mirror_loc, ii);
+            HaloDom.Ucat_y(jj, ii) = CompDom.Ucat_y(mirror_loc, ii);
+            HaloDom.Pressure(jj, ii) = CompDom.Pressure(mirror_loc, ii);
+
+            if ENABLE_DEBUGGING
+                fprintf('DEBUG: \tGhost node (%d, %d) ', ii, jj);
+                fprintf('mirrors inner node (%d, %d)\n', ii, mirror_loc);
+            end
+        end
     end
 
-    Ucat_cal_x(:,1) = Ubcs_x(:,1);
-    Ucat_cal_y(:,1) = Ubcs_y(:,1);
-    Pressure_cal(:,1) = Pbcs(:,1);
+    %% East and West boundaries:
+    % East wall is the same as the West wall
+    PhysDom.Ubcs_x(Nghost+1, 1+Nghost:M+Nghost) = PhysDom.Ucat_x(N, :);
+    PhysDom.Ubcs_y(Nghost+1, 1+Nghost:M+Nghost) = PhysDom.Ucat_y(N, :);
+    PhysDom.Ubcs_x(N+Nghost, 1+Nghost:M+Nghost) = PhysDom.Ucat_x(1, :);
+    PhysDom.Ubcs_y(N+Nghost, 1+Nghost:M+Nghost) = PhysDom.Ucat_y(1, :);
 
-    Ucat_cal_x(:,N2) = Ubcs_x(:,N2);
-    Ucat_cal_y(:,N2) = Ubcs_y(:,N2);
-    Pressure_cal(:,N2) = Pbcs(:,N2);
+    for jj = ( 1+Nghost ):( N+Nghost )
+        for ii = 1:Nghost
+            mirror_dis = Nghost + 1 - ii;
+            mirror_loc = M + Nghost - mirror_dis;
 
-    for jj = 2:N2-1
-            
-        ii = 1; 
-        Ubcs_x(ii, jj) = Ucat_phy_x(M-1, jj-1);
-        Ubcs_y(ii, jj) = Ucat_phy_y(M-1, jj-1);
-        Pbcs(ii, jj) = Pressure_phy(M-1, jj-1);
-        if ENABLE_DEBUGGING
-            fprintf('Ghost node (%d, %d) ', ii, jj);
-            fprintf('mirrors inner node (%d, %d)\n', M-1, jj-1);
+            HaloDom.Ucat_x(jj, ii) = CompDom.Ucat_x(jj, mirror_loc);
+            HaloDom.Ucat_y(jj, ii) = CompDom.Ucat_y(jj, mirror_loc);
+            HaloDom.Pressure(jj, ii) = CompDom.Pressure(jj, mirror_loc);
+
+            if ENABLE_DEBUGGING
+                fprintf('DEBUG: \tGhost node (%d, %d) ', ii, jj);
+                fprintf('mirrors inner node (%d, %d)\n', mirror_loc, jj);
+            end
         end
 
-        ii = M2; 
-        Ubcs_x(ii, jj) = Ucat_phy_x(2, jj-1);
-        Ubcs_y(ii, jj) = Ucat_phy_y(2, jj-1);
-        Pbcs(ii, jj) = Pressure_phy(2, jj-1);
-        if ENABLE_DEBUGGING
-            fprintf('Ghost node (%d, %d) ', ii, jj);
-            fprintf('mirrors inner node (%d, %d)\n', 2, jj-1);
-        end
+        for ii = (M+Nghost+1):M2
+            mirror_dis = ii - (M + Nghost);
+            mirror_loc = 1 + Nghost + mirror_dis;
 
+            HaloDom.Ucat_x(jj, ii) = CompDom.Ucat_x(jj, mirror_loc);
+            HaloDom.Ucat_y(jj, ii) = CompDom.Ucat_y(jj, mirror_loc);
+            HaloDom.Pressure(jj, ii) = CompDom.Pressure(jj, mirror_loc);
+
+            if ENABLE_DEBUGGING
+                fprintf('DEBUG: \tGhost node (%d, %d) ', ii, jj);
+                fprintf('mirrors inner node (%d, %d)\n', mirror_loc, jj);
+            end
+        end
     end
 
-    Ucat_cal_x(1,:) = Ubcs_x(1,:);
-    Ucat_cal_y(1,:) = Ubcs_y(1,:);
-    Pressure_cal(1,:) = Pbcs(1,:);
-        
-    Ucat_cal_x(M2,:) = Ubcs_x(M2,:);
-    Ucat_cal_y(M2,:) = Ubcs_y(M2,:);
-    Pressure_cal(M2,:) = Pbcs(M2,:);
+    %% Copy all values of ghost cells to the computational domain
+    CompDom.Ucat_x = HaloDom.Ucat_x;
+    CompDom.Ucat_y = HaloDom.Ucat_y;
+    CompDom.Pressure = HaloDom.Pressure;
 
-    fprintf('INFO: \t Periodic boundary conditions are enabled!\n');
+    %% Re-merge physical values to the inner domain
+    for jj = ( 1+Nghost ):( N+Nghost )
+        for ii = ( 1+Nghost ):( M+Nghost )
+            CompDom.Ucat_x(jj, ii) = PhysDom.Ucat_x(jj-Nghost, ii-Nghost);
+            CompDom.Ucat_y(jj, ii) = PhysDom.Ucat_y(jj-Nghost, ii-Nghost);
+            CompDom.Pressure(jj, ii) = PhysDom.Pressure(jj-Nghost, ii-Nghost);
+        end
+    end
+
+    fprintf('INFO: \tPeriodic boundary conditions are enabled!\n');
 end
 
-% Return nan to the corners
-Ucat_cal_x(1,1) = nan;
-Ucat_cal_y(1,1) = nan;
-Pressure_cal(1,1) = nan;
-
-Ucat_cal_x(1,N2) = nan;
-Ucat_cal_y(1,N2) = nan;
-Pressure_cal(1,N2) = nan;
-
-Ucat_cal_x(M2,1) = nan;
-Ucat_cal_y(M2,1) = nan;
-Pressure_cal(M2,1) = nan;
-    
-Ucat_cal_x(M2,N2) = nan;
-Ucat_cal_y(M2,N2) = nan;
-Pressure_cal(M2,N2) = nan;
+%% Return 'nan' to the corners of the computational domain

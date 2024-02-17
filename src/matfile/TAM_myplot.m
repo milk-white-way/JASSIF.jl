@@ -14,8 +14,8 @@ end
 [MyPlot.X, MyPlot.Y] = meshgrid(x, y);
 
 MyPlot.time = t;
-MyPlot.ucat_x = Ucat_phy_x(1:(1/res_scale):end, 1:(1/res_scale):end);
-MyPlot.ucat_y = Ucat_phy_y(1:(1/res_scale):end, 1:(1/res_scale):end);
+MyPlot.ucat_x = PhysDom.Ucat_x(1:(1/res_scale):end, 1:(1/res_scale):end);
+MyPlot.ucat_y = PhysDom.Ucat_y(1:(1/res_scale):end, 1:(1/res_scale):end);
 
 % Calculate the velocity magnitude
 velocity_magnitude = sqrt(MyPlot.ucat_x.^2 + MyPlot.ucat_y.^2);

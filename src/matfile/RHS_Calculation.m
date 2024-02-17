@@ -1,16 +1,23 @@
-function [RHS_x, RHS_y] = RHS_Calculation(Ucont_x, Ucont_y, Ucat_x, Ucat_y, Pressure, Re,dx, dy)
+function [RHS_x, RHS_y] = ...
+    RHS_Calculation(Ucont_x, Ucont_y, ...
+                    Ucat_x, Ucat_y, ...
+                    M, N, M2, N2, M3, N3, ...
+                    Pressure, Re,dx, dy)
 
-    [Convective_Flux_x, Convective_Flux_y] = Convective_Flux(Ucont_x, Ucont_y, Ucat_x, Ucat_y, dx, dy);
-    [Viscous_Flux_x, Viscous_Flux_y   ] = Viscous_Flux(Ucat_x, Ucat_y, dx, dy, Re);
+    %[Convective_Flux_x, Convective_Flux_y] = Convective_Flux(Ucont_x, Ucont_y, Ucat_x, Ucat_y, dx, dy);
+    %[Viscous_Flux_x, Viscous_Flux_y   ] = Viscous_Flux(Ucat_x, Ucat_y, dx, dy, Re);
+    %[P_Gradient_x, P_Gradient_y] = Pressure_Gradient(Pressure, dx, dy);
 
-    M = length(Viscous_Flux_x(:,1));
-    N = length(Viscous_Flux_x(1,:));
+    %% Fake fluxes
+    FluxFld.Convective_Flux_x = zeros(N2, N2);
+    FluxFld.Convective_Flux_y = zeros(N2, N2);
+    FluxFld.Viscous_Flux_x = zeros(N2, N2);
+    FluxFld.Viscous_Flux_y = zeros(N2, N2);
+    FluxFld.P_Gradient_x = zeros(N2, N2);
+    FluxFld.P_Gradient_y = zeros(N2, N2);
 
-    % Calculate pressure gradient
-    [P_Gradient_x, P_Gradient_y] = Pressure_Gradient(Pressure, dx, dy);
-
-    F_x  = - Convective_Flux_x + Viscous_Flux_x - P_Gradient_x;       
-    F_y  = - Convective_Flux_y + Viscous_Flux_y - P_Gradient_y;       
+    F_x  = - FluxFld.Convective_Flux_x + FluxFld.Viscous_Flux_x - FluxFld.P_Gradient_x;       
+    F_y  = - FluxFld.Convective_Flux_y + FluxFld.Viscous_Flux_y - FluxFld.P_Gradient_y;       
     
     % Interpolation back to the half node formulation to advance Ucont
     for i = 1:M-1
@@ -31,7 +38,6 @@ function [RHS_x, RHS_y] = RHS_Calculation(Ucont_x, Ucont_y, Ucat_x, Ucat_y, Pres
         RHS_x(i,N) = 0;
     end
 
-
     for i = 1:M
         for j= 1:N-1
             RHS_y(i,j) = (F_y(i,j) + F_y(i,j+1)) / 2;  
@@ -49,5 +55,4 @@ function [RHS_x, RHS_y] = RHS_Calculation(Ucont_x, Ucont_y, Ucat_x, Ucat_y, Pres
         RHS_y(1,j) = 0;
         RHS_y(M,j) = 0;
     end
-
-end  
+end 

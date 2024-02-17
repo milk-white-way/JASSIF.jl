@@ -1,7 +1,8 @@
-function [Conv_Flux_x, Conv_Flux_y] = Convective_Flux(Ucont_x, Ucont_y, Ucat_x, Ucat_y, dx, dy)
+function [Conv_Flux_x, Conv_Flux_y] = ...
+    Convective_Flux(Ucont_x, Ucont_y, ...
+                        Ucat_x, Ucat_y, ...
+                        dx, dy)
 
-% Fpx, Fpy are convective flux at the half node
-%% Conv_Flux* are fluxes at the integer node
 M = length(Ucat_x(:,1));
 N = length(Ucat_x(1,:));
 coef = 1/8;

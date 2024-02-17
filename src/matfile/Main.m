@@ -1,13 +1,12 @@
-%function [Ucat_phy_x, Ucat_phy_y, Pressure_phy, dx, dy, t] = Main(M, N)
-function [Ucat_cal_x, Ucat_cal_y, Pressure_cal, dx, dy, t] = Main(M, N) % Debug
+function [PhysDom, CompDom, HaloDom, dx, dy, t] = Main(M, N) % Get rid of HaloDom for production run
     close all; format long;
     %% Some flags
-    ENABLE_VISUAL_GRID = 0;
+    ENABLE_VISUAL_GRID = 1;
     ENABLE_CALCULATION = 0;
-    ENABLE_VISUAL_PLOT = 1;
+    ENABLE_VISUAL_PLOT = 0;
     ENABLE_BC_PERIODIC = 1;
 
-    ENABLE_DEBUGGING = 0;
+    ENABLE_DEBUGGING = 1;
 
     %% Physical parameters
     Re = 1;
@@ -17,45 +16,36 @@ function [Ucat_cal_x, Ucat_cal_y, Pressure_cal, dx, dy, t] = Main(M, N) % Debug
     dt = 1E-4;
     MAXTIME = 2;
 
-    fprintf('\t Just Another Simulation Suite For Incompressible Flows \n');
-    fprintf('\t \t \t \t \t Version M-2024.2 \n');
-    fprintf('\t \t \t Authors: Trung Le and Tam Nguyen \n');
+    fprintf('\tJust Another Simulation Suite For Incompressible Flows \n');
+    fprintf('\t \t \t \t \tVersion M-2024.2 \n');
+    fprintf('\t \t \tAuthors: Trung Le and Tam Nguyen \n');
     fprintf('\n=================================================================\n');
 
+    set(0,'DefaultFigureWindowStyle','docked')
     %% Variables' dimension in non-staggered grid
     %M = 8;
     %N = 8;
-    fprintf('INFO: \t Number of cells in x-direction = %d \n', M);
-    fprintf('INFO: \t Number of cells in y-direction = %d \n', N);
+    fprintf('INFO: \tNumber of cells in x-direction = %d \n', M);
+    fprintf('INFO: \tNumber of cells in y-direction = %d \n', N);
 
-    %% Ghost variables' dimension in non-staggered grid
-    Nghost = 1; fprintf('INFO: \t Number of ghost layer = %d \n', Nghost);
-    M2 = M + (2*Nghost);
-    N2 = N + (2*Nghost);
-
-    %% Variables' dimension in staggered grid
-    M3 = M + (2*Nghost) + 1;
-    N3 = N + (2*Nghost) + 1;
+    Nghost = 2; fprintf('INFO: \tNumber of ghost layer = %d \n', Nghost);
 
     %% Initialization process
     dU_x = 0;
     dU_y = 0;
     t = 0;
-    fprintf('INFO: \t Time step = %f \n', dt);
+    fprintf('INFO: \tTime step = %f \n', dt);
 
     tic;
-    fprintf('INFO: \t Begin Initialization... ');
-    [Ucont_x, Ucont_y, ...
-        Ucat_phy_x, Ucat_phy_y, Pressure_phy, ...
-        Ucat_cal_x, Ucat_cal_y, Pressure_cal, ...
-        Ubcs_x, Ubcs_y, Pbcs, ...
-        dx, dy] = Init(M, N, M2, N2, M3, N3, L, U, ENABLE_VISUAL_GRID);
+    fprintf('INFO: \tBegin Initialization... ');
+    [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
     fprintf('Done! \n');
+    fprintf('INFO: \tSpatial discretization: dx = %f, dy = %f \n', dx, dy);
 
     TAM_enforce_bcs();
 
     if ENABLE_VISUAL_GRID
-        fprintf('INFO: \t Visualizing grid... ');
+        fprintf('INFO: \tVisualizing grid... ');
         TAM_coordinates();
         H = gcf;
         fprintf('Done! Computational grid is represented in Figure %d. \n', H.Number);
@@ -68,13 +58,13 @@ function [Ucat_cal_x, Ucat_cal_y, Pressure_cal, dx, dy, t] = Main(M, N) % Debug
 
     %% Calculation process
     while ENABLE_CALCULATION
-        fprintf('\nINFO: \t Begin Calculation... \n');
+        fprintf('\nINFO: \tBegin Calculation... \n');
         for time_step = 1:MAXTIME       
 
             tic;
             t = time_step * dt;
         
-            [U_im_x, U_im_y] =  Runge_Kutta(dU_x, dU_y, Ucont_x, Ucont_y, Ucat_cal_x, Ucat_cal_y, Ubcs_x, Ubcs_y, Pressure_cal, Re, dx, dy, dt, t);        
+            [FluxFld, U_im_x, U_im_y] =  Runge_Kutta(dU_x, dU_y, Ucont_x, Ucont_y, Ucat_cal_x, Ucat_cal_y, Ubcs_x, Ubcs_y, Pressure_cal, Re, dx, dy, dt, t);        
                 
             [phi]  = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
                 
