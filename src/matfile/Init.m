@@ -1,4 +1,4 @@
-function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
+function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, dx, dy] = ...
     Init(M, N, Nghost, L, U, VISUAL_GRID)
     if VISUAL_GRID
         coord_cell_centered.x = [];
@@ -23,8 +23,8 @@ function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
     N2 = N + (2*Nghost);
 
     %% Variables' dimension in staggered grid
-    %M3 = M + (2*Nghost) + 1;
-    %N3 = N + (2*Nghost) + 1;
+    M3 = M + (2*Nghost) + 1;
+    N3 = N + (2*Nghost) + 1;
 
     %% Allocate memory for the components
     Ucont_x = nan(N2, M2);
@@ -41,12 +41,12 @@ function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
     Ubcs_x = nan(N2, M2);
     Ubcs_y = nan(N2, M2);
 
-    %% Init face-centered components
+    %% Init face-centered velocity components
     %========= x-component =========
     for j = 1:N2
-        for i = 1:M2
+        for i = 1:M3
             
-            x = (i -1 -Nghost +0.5) * dx;
+            x = (i -1 -Nghost -0.5) * dx;
             y = (j -1 -Nghost) * dy;                
             
             Ucont_x(j, i) =  U * sin( 2*pi*x ) * cos( 2*pi*y );
@@ -60,11 +60,11 @@ function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
     end
 
     %========= y-component =========
-    for j = 1:N2
+    for j = 1:N3
         for i = 1:M2
             
             x = (i -1 -Nghost) * dx;
-            y = (j -1 -Nghost +0.5) * dy;        
+            y = (j -1 -Nghost -0.5) * dy;        
             
             Ucont_y(j, i) = -U * cos( 2*pi*x ) * sin( 2*pi*y );
 
@@ -76,15 +76,18 @@ function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
         end
     end
 
-    %% Below part is only for debugging purposes
+    %% Cell-centered velocity components
+    [Ucat_comp_x, Ucat_comp_y] = Contra_To_Cart(Ucont_x, Ucont_y, M2, N2);
+
+    Pressure_comp = nan(N2, M2);
     %% Init cell-centered components
-    for j = 1:N
-        for i = 1:M
+    for j = 1:N2
+        for i = 1:M2
             
-            x = (i -1) * dx;
-            y = (j -1) * dy;
+            x = (i -1 -Nghost) * dx;
+            y = (j -1 -Nghost) * dy;
             
-            Pressure_phys(j, i) = -0.25 * U^2 * ( cos( 4*pi*x ) + cos( 4*pi*y ) );
+            Pressure_comp(j, i) = -0.25 * U^2 * ( cos( 4*pi*x ) + cos( 4*pi*y ) );
 
             if VISUAL_GRID
                 %TAM_savecoorddinates('coord_cell_centered.csv', x, y); % Old way, slow way
@@ -95,7 +98,7 @@ function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
     end
 
     if VISUAL_GRID
-        %% Init the ghost cells only neccessitate debugging
+        %% Init the ghost cells here only neccessitate debugging
         for j = 1:N2
             for i = 1:M2
                 if i <= Nghost || i > (M2-Nghost) || j <= Nghost || j > (N2-Nghost)
@@ -112,23 +115,12 @@ function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
         save('coordinates.mat', 'coord_cell_centered', 'coord_ghost', 'coord_face_centered_x', 'coord_face_centered_y');
     end
 
-    %% Acutal scheme calls for conversion from Ucont to Ucat in the physical domain
-    for jj = ( 1+Nghost ):( N+Nghost )
-        for ii = ( 1+Nghost ):( M+Nghost )
-            Ucat_phys_x(jj-Nghost, ii-Nghost) = ( Ucont_x(jj, ii) + Ucont_x(jj, ii-1) ) / 2;
-            Ucat_phys_y(jj-Nghost, ii-Nghost) = ( Ucont_y(jj, ii) + Ucont_y(jj-1, ii) ) / 2;
-        end
-    end
-
-    Ucat_comp_x = Ucat_halo_x;
-    Ucat_comp_y = Ucat_halo_y;
-    Pressure_comp = Pressure_halo;
-    %% Create calculated domain by merging physical and ghost cells
-    for j = ( 1+Nghost ):( N+Nghost ) 
-        for i = ( 1+Nghost ):( M+Nghost )
-            Ucat_comp_x(j, i) = Ucat_phys_x(j-Nghost, i-Nghost);
-            Ucat_comp_y(j, i) = Ucat_phys_y(j-Nghost, i-Nghost);
-            Pressure_comp(j, i) = Pressure_phys(j-Nghost, i-Nghost);
+    %% Selecting the physical domain
+    for jj = 1:N
+        for ii = 1:M
+            Ucat_phys_x(jj, ii) = Ucat_comp_x(jj+Nghost, ii+Nghost);
+            Ucat_phys_y(jj, ii) = Ucat_comp_y(jj+Nghost, ii+Nghost);
+            Pressure_phys(jj, ii) = Pressure_comp(jj+Nghost, ii+Nghost);
         end
     end
 
@@ -136,16 +128,25 @@ function [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = ...
     PhysDom.Ucat_x = Ucat_phys_x;
     PhysDom.Ucat_y = Ucat_phys_y;
     PhysDom.Pressure = Pressure_phys;
-    PhysDom.Ubcs_x = Ubcs_x;
-    PhysDom.Ubcs_y = Ubcs_y;
 
     CompDom.Ucat_x = Ucat_comp_x;
     CompDom.Ucat_y = Ucat_comp_y;
     CompDom.Pressure = Pressure_comp;
     CompDom.Ucont_x = Ucont_x;
     CompDom.Ucont_y = Ucont_y;
+    CompDom.Ubcs_x = Ubcs_x;
+    CompDom.Ubcs_y = Ubcs_y;
 
     HaloDom.Ucat_x = Ucat_halo_x;
     HaloDom.Ucat_y = Ucat_halo_y;
     HaloDom.Pressure = Pressure_halo;
+
+    %% Init fluxes
+    FluxSum.Convective.Flux_x   = nan(N2, M2);
+    FluxSum.Convective.Flux_y   = nan(N2, M2);
+    FluxSum.Viscous.Flux_x      = nan(N2, M2);
+    FluxSum.Viscous.Flux_y      = nan(N2, M2);
+    FluxSum.P_Gradient.Flux_x   = nan(N2, M2);
+    FluxSum.P_Gradient.Flux_y   = nan(N2, M2);
+        
 end

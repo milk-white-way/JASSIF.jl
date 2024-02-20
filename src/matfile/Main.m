@@ -1,10 +1,15 @@
-function [PhysDom, CompDom, HaloDom, dx, dy, t] = Main(M, N) % Get rid of HaloDom for production run
-    close all; format long;
+function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
+    Main(M, N) % Get rid of HaloDom for production run
+
+    close all; 
+    format shortE;
+    format compact;
+
     %% Some flags
     ENABLE_VISUAL_GRID = 1;
-    ENABLE_CALCULATION = 0;
-    ENABLE_VISUAL_PLOT = 0;
-    ENABLE_BC_PERIODIC = 1;
+    ENABLE_CALCULATION = 1;
+    ENABLE_VISUAL_PLOT = 1;
+    ENABLE_BC_PERIODIC = 0;
 
     ENABLE_DEBUGGING = 1;
 
@@ -14,7 +19,7 @@ function [PhysDom, CompDom, HaloDom, dx, dy, t] = Main(M, N) % Get rid of HaloDo
     U = 1;
     %% Solver parameters
     dt = 1E-4;
-    MAXTIME = 2;
+    MAXTIME = 1;
 
     fprintf('\tJust Another Simulation Suite For Incompressible Flows \n');
     fprintf('\t \t \t \t \tVersion M-2024.2 \n');
@@ -23,8 +28,8 @@ function [PhysDom, CompDom, HaloDom, dx, dy, t] = Main(M, N) % Get rid of HaloDo
 
     set(0,'DefaultFigureWindowStyle','docked')
     %% Variables' dimension in non-staggered grid
-    %M = 8;
-    %N = 8;
+    %M = 8; % Now taking input
+    %N = 8; % Now taking input
     fprintf('INFO: \tNumber of cells in x-direction = %d \n', M);
     fprintf('INFO: \tNumber of cells in y-direction = %d \n', N);
 
@@ -38,7 +43,7 @@ function [PhysDom, CompDom, HaloDom, dx, dy, t] = Main(M, N) % Get rid of HaloDo
 
     tic;
     fprintf('INFO: \tBegin Initialization... ');
-    [PhysDom, CompDom, HaloDom, M2, N2, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
+    [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
     fprintf('Done! \n');
     fprintf('INFO: \tSpatial discretization: dx = %f, dy = %f \n', dx, dy);
 
@@ -64,18 +69,19 @@ function [PhysDom, CompDom, HaloDom, dx, dy, t] = Main(M, N) % Get rid of HaloDo
             tic;
             t = time_step * dt;
         
-            [FluxFld, U_im_x, U_im_y] =  Runge_Kutta(dU_x, dU_y, Ucont_x, Ucont_y, Ucat_cal_x, Ucat_cal_y, Ubcs_x, Ubcs_y, Pressure_cal, Re, dx, dy, dt, t);        
-                
-            [phi]  = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
-                
-            [U_x_new U_y_new P_new] = Update_Solution(U_im_x, U_im_y, Pressure, phi,dx,dy,dt);
+            [FluxSum, U_im_x, U_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, Nghost, Re, dx, dy, dt, t, ENABLE_DEBUGGING);
+
+            [phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
+
+            %{
+            [U_x_new, U_y_new, P_new] = Update_Solution(U_im_x, U_im_y, Pressure, phi, dx, dy, dt);
                 
             %Update dU
             dU_x = U_x_new - Ucont_x;
             dU_y = U_y_new - Ucont_y;
                 
             % Go next time step
-            [Ucat_x Ucat_y Ucont_x Ucont_y] = FormBCS(U_x_new, U_y_new, Ubcs_x, Ubcs_y, dx, dy,Re,t);
+            [Ucat_x, Ucat_y, Ucont_x, Ucont_y] = FormBCS(U_x_new, U_y_new, Ubcs_x, Ubcs_y, dx, dy,Re,t);
                 
             Pressure = P_new;          
                 
@@ -84,13 +90,13 @@ function [PhysDom, CompDom, HaloDom, dx, dy, t] = Main(M, N) % Get rid of HaloDo
             MaxDiv = norm(Div, inf)
             
             norm(Vectorize(dU_x), inf)
-
+            %}
             fprintf('INFO: \t Time step %d is done! \n', time_step);
             toc;
         end
 
         if time_step == MAXTIME
-            CALCULATE = 0;
+            ENABLE_CALCULATION = 0;
         end
     end
 end
