@@ -7,11 +7,13 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
     %% Some flags
     ENABLE_VISUAL_GRID = 1;
-    ENABLE_CALCULATION = 1;
+    ENABLE_CALCULATION = 0;
     ENABLE_VISUAL_PLOT = 1;
     ENABLE_BC_PERIODIC = 0;
 
     ENABLE_DEBUGGING = 1;
+
+    Nghost = 1;
 
     %% Physical parameters
     Re = 1;
@@ -32,8 +34,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     %N = 8; % Now taking input
     fprintf('INFO: \tNumber of cells in x-direction = %d \n', M);
     fprintf('INFO: \tNumber of cells in y-direction = %d \n', N);
-
-    Nghost = 2; fprintf('INFO: \tNumber of ghost layer = %d \n', Nghost);
+    fprintf('INFO: \tNumber of ghost layer = %d \n', Nghost);
 
     %% Initialization process
     dU_x = 0;

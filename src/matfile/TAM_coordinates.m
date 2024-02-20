@@ -25,4 +25,7 @@ plot(x_cc, y_cc, 's', 'MarkerFaceColor', 'red', 'MarkerSize', 10);
 plot(x_gh, y_gh, 's', 'MarkerFaceColor', 'white', 'MarkerSize', 10);
 plot(x_fc_x, y_fc_x, '>', 'MarkerFaceColor', 'green', 'MarkerSize', 10);
 plot(x_fc_y, y_fc_y, '^', 'MarkerFaceColor', 'cyan', 'MarkerSize', 10);
-grid on; grid minor;
+grid on;
+legend('Physical Domain', 'Cell Centered', 'Ghost Cells', ...
+            'Face Centered (x)', 'Face Centered (y)', ...
+            'Location', 'EastOutside');
