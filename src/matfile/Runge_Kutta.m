@@ -77,8 +77,8 @@ function [FluxSumOut, U_im_x, U_im_y] = ...
                 end
             end
 
-            RHS_phys_x = RHS_comp_x(2:N3, :);
-            RHS_phys_y = RHS_comp_y(:, 2:M3);
+            RHS_phys_x = RHS_comp_x(jphys:jphye, iphys-1:iphye);
+            RHS_phys_y = RHS_comp_y(jphys-1:jphye, iphys:iphye);
 
             RHS_phys_x = RHS_phys_x - (1.5/dt) * (U_im_x  - Ucont_x) + (0.5/dt) * dU_old_x;
             RHS_phys_y = RHS_phys_y - (1.5/dt) * (U_im_y  - Ucont_y) + (0.5/dt) * dU_old_y;

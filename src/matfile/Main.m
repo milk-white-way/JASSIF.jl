@@ -13,7 +13,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
     ENABLE_DEBUGGING = 1;
 
-    Nghost = 1;
+    Nghost = 2;
 
     %% Physical parameters
     Re = 1;
@@ -24,8 +24,9 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     MAXTIME = 1;
 
     fprintf('\tJust Another Simulation Suite For Incompressible Flows \n');
-    fprintf('\t \t \t \t \tVersion M-2024.2 \n');
+    fprintf('\t \t \t \t \tVersion 3.0 \n');
     fprintf('\t \t \tAuthors: Trung Le and Tam Nguyen \n');
+    fprintf('\t \t2022-2024 North Dakota State University \n');
     fprintf('\n=================================================================\n');
 
     set(0,'DefaultFigureWindowStyle','docked')
