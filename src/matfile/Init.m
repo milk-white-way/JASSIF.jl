@@ -1,4 +1,4 @@
-function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, dx, dy] = ...
+function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, M3, N3, dx, dy] = ...
     Init(M, N, Nghost, L, U, VISUAL_GRID)
     if VISUAL_GRID
         coord_cell_centered.x = [];
@@ -116,9 +116,9 @@ function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, dx, dy] = ...
     PhysDom.Ucat_y = Ucat_phys_y;
     PhysDom.Pressure = Pressure_phys;
 
-    HaloDom.Ucat_x = Ucat_halo_x;
-    HaloDom.Ucat_y = Ucat_halo_y;
-    HaloDom.Pressure = Pressure_halo;
+    HaloDom.Ubcs_x = Ucat_halo_x;
+    HaloDom.Ubcs_y = Ucat_halo_y;
+    HaloDom.Pbcs = Pressure_halo;
 
     [Ucat_comp_x, Ucat_comp_y, Pressure_comp] = TAM_ensemble_comp(PhysDom, HaloDom, M, N, Nghost);
 

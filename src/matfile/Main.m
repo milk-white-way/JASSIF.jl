@@ -7,9 +7,9 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
     %% Some flags
     ENABLE_VISUAL_GRID = 1;
-    ENABLE_CALCULATION = 0;
+    ENABLE_CALCULATION = 1;
     ENABLE_VISUAL_PLOT = 1;
-    ENABLE_BC_PERIODIC = 0;
+    ENABLE_BC_PERIODIC = 1;
 
     ENABLE_DEBUGGING = 1;
 
@@ -35,16 +35,22 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     fprintf('INFO: \tNumber of cells in x-direction = %d \n', M);
     fprintf('INFO: \tNumber of cells in y-direction = %d \n', N);
     fprintf('INFO: \tNumber of ghost layer = %d \n', Nghost);
+    fprintf('INFO: \tTime step = %f \n', dt);
 
     %% Initialization process
     dU_x = 0;
     dU_y = 0;
     t = 0;
-    fprintf('INFO: \tTime step = %f \n', dt);
+
+    %% Quality of life here
+    %==================================
+    iphys = 1+Nghost; iphye = M+Nghost;
+    jphys = 1+Nghost; jphye = N+Nghost;
+    %==================================
 
     tic;
     fprintf('INFO: \tBegin Initialization... ');
-    [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
+    [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, M3, N3, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
     fprintf('Done! \n');
     fprintf('INFO: \tSpatial discretization: dx = %f, dy = %f \n', dx, dy);
 
@@ -70,7 +76,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
             tic;
             t = time_step * dt;
         
-            [FluxSum, U_im_x, U_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, Nghost, Re, dx, dy, dt, t, ENABLE_DEBUGGING);
+            [FluxSum, U_im_x, U_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, Re, dx, dy, dt, t, iphys, iphye, jphys, jphye, ENABLE_DEBUGGING);
 
             [phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
 

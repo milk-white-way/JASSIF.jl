@@ -1,9 +1,18 @@
 function [Conv_Flux_x, Conv_Flux_y] = ...
-    Convective_Flux(FluxSumOld, Ucont_x, Ucont_y, Ucat_x, Ucat_y, ...
-                        M2, N2, dx, dy)
+    Convective_Flux(FluxSumOld, ...
+                        Ucont_x, Ucont_y, Ucat_x, Ucat_y, ...
+                        M, N, Nghost, dx, dy, ...
+                        iphys, iphye, jphys, jphye, DEBUG)
 
     Conv_Flux_x = FluxSumOld.Convective.Flux_x;
     Conv_Flux_y = FluxSumOld.Convective.Flux_y;
+
+    for ii = iphys:iphye
+        for jj = jphys:jphye
+            Conv_Flux_y(jj, ii) = 0;
+            Conv_Flux_x(jj, ii) = 0;
+        end
+    end
 
     %{
     coef = 1/8;
@@ -130,11 +139,5 @@ function [Conv_Flux_x, Conv_Flux_y] = ...
         end
     end
     %}
-    for ii = 1:M2
-        for jj = 1:N2
-            Conv_Flux_y(jj, ii) = 0;
-            Conv_Flux_x(jj, ii) = 0;
-        end
-    end
 
 end

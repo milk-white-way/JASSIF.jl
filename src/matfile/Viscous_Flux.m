@@ -1,13 +1,13 @@
 function [Viscous_x, Viscous_y] = ...
-    Viscous_Flux(FluxSumOld, Ucat_x, Ucat_y, M2, N2, dx, dy, Re, DEBUG) % Re is Reynolds number
+    Viscous_Flux(FluxSumOld, Ucat_x, Ucat_y, M, N, Nghost, dx, dy, Re, DEBUG) % Re is Reynolds number
 
     Viscous_x = FluxSumOld.Viscous.Flux_x;
     Viscous_y = FluxSumOld.Viscous.Flux_y;
 
-    %% Inner
-    for ii = 2:M2-1
-        for jj = 2:N2-1
-            
+    %% Inner (Physical domain)
+    for ii = (1+Nghost):(M+Nghost)
+        for jj = (1+Nghost):(N+Nghost)
+
             %% ------------- x direction -------------------
             % Central differencing
             up = Ucat_x(jj, ii);
@@ -35,7 +35,8 @@ function [Viscous_x, Viscous_y] = ...
         end
     end
 
-    %% Outer
+    %% Outer: Concept not existed in the context of periodic boundary conditions
+    %{
     % South (jj = 1) and North (jj = N2)
     for jj = [1, N2]
         for ii = 2:M2-1 % Minus the corners
@@ -188,7 +189,9 @@ function [Viscous_x, Viscous_y] = ...
     %       |
     Viscous_x(N2, M2) = ( (2*Ucat_x(N2, M2) - 5*Ucat_x(N2, M2-1) + 4*Ucat_x(N2, M2-2) - Ucat_x(N2, M2-3))/(dx^3) + (2*Ucat_x(N2, M2) - 5*Ucat_x(N2-1, M2) + 4*Ucat_x(N2-2, M2) - Ucat_x(N2-3, M2))/(dy^3) );
     Viscous_y(N2, M2) = ( (2*Ucat_y(N2, M2) - 5*Ucat_y(N2, M2-1) + 4*Ucat_y(N2, M2-2) - Ucat_y(N2, M2-3))/(dx^3) + (2*Ucat_y(N2, M2) - 5*Ucat_y(N2-1, M2) + 4*Ucat_y(N2-2, M2) - Ucat_y(N2-3, M2))/(dy^3) );
-    
+
+    %}
+
     Viscous_x = Viscous_x/Re;
     Viscous_y = Viscous_y/Re;
 
