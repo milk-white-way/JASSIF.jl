@@ -1,12 +1,16 @@
 function [Viscous_x, Viscous_y] = ...
-    Viscous_Flux(FluxSumOld, Ucat_x, Ucat_y, M, N, Nghost, dx, dy, Re, DEBUG) % Re is Reynolds number
+    Viscous_Flux(FluxSumOld, Ucat_x, Ucat_y, iphys, iphye, jphys, jphye, dx, dy, Re, DEBUG) % Re is Reynolds number
+
+    if DEBUG
+        fprintf('DEBUG: \tCalculation of Fluxes for Viscous Terms\n');
+    end
 
     Viscous_x = FluxSumOld.Viscous.Flux_x;
     Viscous_y = FluxSumOld.Viscous.Flux_y;
 
     %% Inner (Physical domain)
-    for ii = (1+Nghost):(M+Nghost)
-        for jj = (1+Nghost):(N+Nghost)
+    for ii = iphys:iphye
+        for jj = jphys:jphye
 
             %% ------------- x direction -------------------
             % Central differencing
@@ -35,7 +39,7 @@ function [Viscous_x, Viscous_y] = ...
         end
     end
 
-    %% Outer: Concept not existed in the context of periodic boundary conditions
+    %% Outer: does not exists in the context of periodic boundary conditions
     %{
     % South (jj = 1) and North (jj = N2)
     for jj = [1, N2]

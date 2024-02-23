@@ -11,7 +11,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     ENABLE_VISUAL_PLOT = 1;
     ENABLE_BC_PERIODIC = 1;
 
-    ENABLE_DEBUGGING = 1;
+    ENABLE_DEBUGGING = 0;
 
     Nghost = 2;
 
@@ -43,19 +43,13 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     dU_y = 0;
     t = 0;
 
-    %% Quality of life here
-    %==================================
-    iphys = 1+Nghost; iphye = M+Nghost;
-    jphys = 1+Nghost; jphye = N+Nghost;
-    %==================================
-
     tic;
     fprintf('INFO: \tBegin Initialization... ');
-    [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, M3, N3, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
+    [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
     fprintf('Done! \n');
     fprintf('INFO: \tSpatial discretization: dx = %f, dy = %f \n', dx, dy);
 
-    TAM_enforce_bcs();
+    [CompDom, HaloDom, ~, ~, ~, ~, ~] = TAM_enforce_bcs_v2(PhysDom, CompDom, M, N, M2, N2, Nghost, iphys, iphye, jphys, jphye, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
     if ENABLE_VISUAL_GRID
         fprintf('INFO: \tVisualizing grid... ');
@@ -77,9 +71,9 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
             tic;
             t = time_step * dt;
         
-            [FluxSum, U_im_x, U_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, Re, dx, dy, dt, t, iphys, iphye, jphys, jphye, ENABLE_DEBUGGING);
+            [FluxSum, Ucont_im_x, Ucont_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, iphys, iphye, jphys, jphye, Re, dx, dy, dt, t, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
-            [phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
+            %[phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
 
             %{
             [U_x_new, U_y_new, P_new] = Update_Solution(U_im_x, U_im_y, Pressure, phi, dx, dy, dt);

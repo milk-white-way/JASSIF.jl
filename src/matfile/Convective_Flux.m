@@ -1,14 +1,15 @@
 function [Conv_Flux_x, Conv_Flux_y] = ...
     Convective_Flux(FluxSumOld, ...
                         Ucont_x, Ucont_y, Ucat_x, Ucat_y, ...
-                        M, N, Nghost, dx, dy, ...
+                        M, N, M3, N3, Nghost, dx, dy, ...
                         iphys, iphye, jphys, jphye, DEBUG)
+
+    if DEBUG
+        fprintf('DEBUG: \tCalculation of Fluxes for Convective Terms\n');
+    end
 
     Conv_Flux_x = FluxSumOld.Convective.Flux_x;
     Conv_Flux_y = FluxSumOld.Convective.Flux_y;
-
-    M3 = M+1;
-    N3 = N+1;
 
     G = Nghost;
 

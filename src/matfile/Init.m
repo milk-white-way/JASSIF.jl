@@ -1,4 +1,4 @@
-function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, M3, N3, dx, dy] = ...
+function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye, dx, dy] = ...
     Init(M, N, Nghost, L, U, VISUAL_GRID)
     if VISUAL_GRID
         coord_cell_centered.x = [];
@@ -28,15 +28,17 @@ function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, M3, N3, dx, dy] = ...
     M3 = M+1;
     N3 = N+1;
 
+    %% Quality of life here
+    %==================================
+    iphys = 1+Nghost; iphye = M+Nghost;
+    jphys = 1+Nghost; jphye = N+Nghost;
+    %==================================
+
     %% Allocate memory for the components
     Ucont_x = nan(N, M3);
     Ucont_y = nan(N3, M);
 
     Pressure_phys = nan(N, M);
-
-    Ucat_halo_x = nan(N2, M2);
-    Ucat_halo_y = nan(N2, M2);
-    Pressure_halo = nan(N2, M2);
 
     %% Init face-centered velocity components
     %========= x-component =========
@@ -94,7 +96,6 @@ function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, M3, N3, dx, dy] = ...
     end
 
     if VISUAL_GRID
-        %% Init the ghost cells here only neccessitate debugging
         for j = 1:N2
             for i = 1:M2
                 if i <= Nghost || i > (M2-Nghost) || j <= Nghost || j > (N2-Nghost)
@@ -116,15 +117,6 @@ function [PhysDom, CompDom, HaloDom, FluxSum, M2, N2, M3, N3, dx, dy] = ...
     PhysDom.Ucat_y = Ucat_phys_y;
     PhysDom.Pressure = Pressure_phys;
 
-    HaloDom.Ubcs_x = Ucat_halo_x;
-    HaloDom.Ubcs_y = Ucat_halo_y;
-    HaloDom.Pbcs = Pressure_halo;
-
-    [Ucat_comp_x, Ucat_comp_y, Pressure_comp] = TAM_ensemble_comp(PhysDom, HaloDom, M, N, Nghost);
-
-    CompDom.Ucat_x = Ucat_comp_x;
-    CompDom.Ucat_y = Ucat_comp_y;
-    CompDom.Pressure = Pressure_comp;
     CompDom.Ucont_x = Ucont_x;
     CompDom.Ucont_y = Ucont_y;
 
