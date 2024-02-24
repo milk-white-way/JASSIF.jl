@@ -26,6 +26,16 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     %% Solver parameters
     dt = 1E-4;
     MAXTIME = 1;
+    %% AMRESSIF parameters
+    max_grid_size = 8;
+    plot_init = 1;
+
+    if ENABLE_BC_PERIODIC
+        bc_lo = [1, 1];
+        bc_hi = [1, 1];
+    else
+        error('Non-periodic boundary condition is not supported yet!')
+    end
 
     fprintf('\tJust Another Simulation Suite For Incompressible Flows \n');
     fprintf('\t \t \t \t \tVersion 3.0 \n');
@@ -69,8 +79,14 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
     % Optional step: Create input file for AMRESSIF Poisson solver
     fid = fopen(AMRESSIF, 'w');
-    fprintf(fid, 'Hello, AMRESSIF! \n'); 
-    
+        fprintf(fid, '#Hello, from JASSIF! \n');
+        fprintf(fid, 'n_cell = %d \n', M);
+        fprintf(fid, 'max_grid_size = %d \n', max_grid_size);
+        fprintf(fid, 'plot_init = %d \n', plot_init);
+        fprintf(fid, 'imported_dt = %d \n', dt);
+        fprintf(fid, 'bc_lo = %d %d \n', bc_lo(1), bc_lo(2));
+        fprintf(fid, 'bc_hi = %d %d \n', bc_hi(1), bc_hi(2));
+
     % Close the file
     fclose(fid);
 
@@ -87,13 +103,15 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
             %% Solve the Poisson Equation to obtain correction field 'phi'
             % Step 1: Export contravariant velocity components and pressure field to hdf5 file
-            h5create('ImplicitRK.h5', '/Ucont/imx', [N3 M]);
-            h5create('ImplicitRK.h5', '/Ucont/imy', [N M3]);
+            h5create('ImplicitRK.h5', '/Ucont/imx', [N M3]);
+            h5create('ImplicitRK.h5', '/Ucont/imy', [N3 M]);
             h5create('ImplicitRK.h5', '/Pressure', [N M]);
 
             h5write('ImplicitRK.h5', '/Ucont/imx', Ucont_im_x);
             h5write('ImplicitRK.h5', '/Ucont/imy', Ucont_im_y);
             h5write('ImplicitRK.h5', '/Pressure', PhysDom.Pressure);
+
+            % Step 2: 
 
             % We call in the Poisson solver from AMRESSIF source code to solve the Poisson Equation
             %[phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);

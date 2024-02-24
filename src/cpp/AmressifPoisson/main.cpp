@@ -43,7 +43,7 @@ void main_main ()
     int n_cell, max_grid_size, nsteps, plot_int;
 
     // time = starting time in the simulation
-    Real time;
+    Real time, imported_dt;
 
     // Physical boundary condition mapping
     // 0 is periodic
@@ -70,12 +70,15 @@ void main_main ()
         plot_int = -1;
         pp.query("plot_int", plot_int);
 
+        imported_dt = -1;
+        pp.query("imported_dt", imported_dt);
+
         // Default nsteps to 1, allow us to set it to something else in the inputs file
         nsteps = 1;
         pp.query("nsteps", nsteps);
 
         // Reading current time in case of plot files
-        pp.query("time", time);
+        pp.query("dt", dt);
 
         // read in BC
         pp.queryarr("bc_lo", bc_lo);
