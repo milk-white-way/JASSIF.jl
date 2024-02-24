@@ -12,6 +12,10 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     ENABLE_BC_PERIODIC = 1;
 
     ENABLE_DEBUGGING = 0;
+    AMRESSIF = 'input';
+
+    delete('ImplicitRK.h5');
+    delete(AMRESSIF);
 
     Nghost = 2;
 
@@ -63,6 +67,13 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     end
     toc;
 
+    % Optional step: Create input file for AMRESSIF Poisson solver
+    fid = fopen(AMRESSIF, 'w');
+    fprintf(fid, 'Hello, AMRESSIF! \n'); 
+    
+    % Close the file
+    fclose(fid);
+
     %% Calculation process
     while ENABLE_CALCULATION
         fprintf('\nINFO: \tBegin Calculation... \n');
@@ -70,9 +81,21 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
             tic;
             t = time_step * dt;
-        
+
+            %% Solve the divergence-free Momentum Equation to obtain next-timestep contravariant velocity components
             [FluxSum, Ucont_im_x, Ucont_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, iphys, iphye, jphys, jphye, Re, dx, dy, dt, t, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
+            %% Solve the Poisson Equation to obtain correction field 'phi'
+            % Step 1: Export contravariant velocity components and pressure field to hdf5 file
+            h5create('ImplicitRK.h5', '/Ucont/imx', [N3 M]);
+            h5create('ImplicitRK.h5', '/Ucont/imy', [N M3]);
+            h5create('ImplicitRK.h5', '/Pressure', [N M]);
+
+            h5write('ImplicitRK.h5', '/Ucont/imx', Ucont_im_x);
+            h5write('ImplicitRK.h5', '/Ucont/imy', Ucont_im_y);
+            h5write('ImplicitRK.h5', '/Pressure', PhysDom.Pressure);
+
+            % We call in the Poisson solver from AMRESSIF source code to solve the Poisson Equation
             %[phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
 
             %{
