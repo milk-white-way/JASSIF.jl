@@ -5,17 +5,23 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     format shortE;
     format compact;
 
+    IMPORT_HDF5 = 'ImplicitRK.h5';
+    if exist(IMPORT_HDF5, 'file') == 2
+        delete(IMPORT_HDF5);
+    end
+
+    AMRESSIF = 'input';
+    if exist(AMRESSIF, 'file') == 2
+        delete(AMRESSIF);
+    end
+
     %% Some flags
-    ENABLE_VISUAL_GRID = 1;
+    ENABLE_VISUAL_GRID = 0;
     ENABLE_CALCULATION = 1;
-    ENABLE_VISUAL_PLOT = 1;
+    ENABLE_VISUAL_PLOT = 0;
     ENABLE_BC_PERIODIC = 1;
 
     ENABLE_DEBUGGING = 0;
-    AMRESSIF = 'input';
-
-    delete('ImplicitRK.h5');
-    delete(AMRESSIF);
 
     Nghost = 2;
 
@@ -31,8 +37,8 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     plot_init = 1;
 
     if ENABLE_BC_PERIODIC
-        bc_lo = [1, 1];
-        bc_hi = [1, 1];
+        bc_lo = [0, 0];
+        bc_hi = [0, 0];
     else
         error('Non-periodic boundary condition is not supported yet!')
     end
@@ -83,7 +89,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
         fprintf(fid, 'n_cell = %d \n', M);
         fprintf(fid, 'max_grid_size = %d \n', max_grid_size);
         fprintf(fid, 'plot_init = %d \n', plot_init);
-        fprintf(fid, 'imported_dt = %d \n', dt);
+        fprintf(fid, 'time = %d \n', t);
         fprintf(fid, 'bc_lo = %d %d \n', bc_lo(1), bc_lo(2));
         fprintf(fid, 'bc_hi = %d %d \n', bc_hi(1), bc_hi(2));
 
@@ -103,17 +109,26 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
             %% Solve the Poisson Equation to obtain correction field 'phi'
             % Step 1: Export contravariant velocity components and pressure field to hdf5 file
-            h5create('ImplicitRK.h5', '/Ucont/imx', [N M3]);
-            h5create('ImplicitRK.h5', '/Ucont/imy', [N3 M]);
-            h5create('ImplicitRK.h5', '/Pressure', [N M]);
+            h5create(IMPORT_HDF5, '/Ucont/imx', [N M3]);
+            h5create(IMPORT_HDF5, '/Ucont/imy', [N3 M]);
+            h5create(IMPORT_HDF5, '/Pressure', [N M]);
 
-            h5write('ImplicitRK.h5', '/Ucont/imx', Ucont_im_x);
-            h5write('ImplicitRK.h5', '/Ucont/imy', Ucont_im_y);
-            h5write('ImplicitRK.h5', '/Pressure', PhysDom.Pressure);
+            h5write(IMPORT_HDF5, '/Ucont/imx', Ucont_im_x);
+            h5write(IMPORT_HDF5, '/Ucont/imy', Ucont_im_y);
+            h5write(IMPORT_HDF5, '/Pressure', PhysDom.Pressure);
 
-            % Step 2: 
+            % Step 2: Update time in AMRESSIF input file
+            fid = fopen(AMRESSIF, 'w');
+            S = textscan(fid, '%s');
+            fclose(fid);
+            S = S{1};
+            idx = contains(S, 'time');
+            S{idx} = ['time = ' num2str(t)];
+            fid = fopen(AMRESSIF, 'w');
+            fprintf(fid, '%s\n', S{:});
+            fclose(fid);
 
-            % We call in the Poisson solver from AMRESSIF source code to solve the Poisson Equation
+            % Step 2: Call in the Poisson solver from AMRESSIF source code to solve the Poisson Equation
             %[phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
 
             %{
