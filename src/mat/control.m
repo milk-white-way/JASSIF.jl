@@ -1,8 +1,8 @@
 %% Solver's parameters
 M = 16;
 N = 16;
-dt = 1E-4;
-MAXTIME = 100;
+dt = 1E-5;
+MAXTIME = 1000;
 
 %% Physical parameters
 Re = 1;

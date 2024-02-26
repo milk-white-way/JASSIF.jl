@@ -5,7 +5,8 @@ function Main()
     format compact;
 
     %% Include Control Parameters
-    control()
+    control(); % I think it is better to load it during a test
+    checkpoint_form = num2str(floor(log10(MAXTIME)) + 1);
 
     %% Extra solver's parameters that for dev
     Nghost = 2;
@@ -209,18 +210,21 @@ function Main()
             MaxDiv = norm(Div, inf);
             
             norm(Vectorize(dU_x), inf);
-            fprintf('INFO: \t Time Step No. %d is done where the time is %.4f \n', time_step, t);
-        end
+            fprintf('INFO: \t Time Step %d is done where the time is %.4f \n', time_step, t);
 
-        %% Writing checkpoints
-        if rem(time_step, checkpoint_freq) == 0
-            dir_name = '/Checkpoints/';
-            if ~exist(dir_name, 'dir')
-                mkdir(dir_name);
+            %% Writing checkpoints
+            if rem(time_step, checkpoint_freq) == 0
+                dir_name = '/Checkpoints/';
+                full_path = strcat(checkpoint_path, dir_name);
+
+                if ~exist(full_path, 'dir')
+                    mkdir(full_path);
+                end
+
+                chkname = strcat('%schk_%0', checkpoint_form, 'd.mat');
+                full_name = sprintf(chkname, full_path, time_step);
+                save(full_name, 'PhysDom', 'FluxSum', 'A', 'dx', 'dy', 't')
             end
-            full_path = strcat(checkpoint_path, dir_name);
-            full_name = sprintf('%schk_%d.mat', full_path, time_step);
-            save(full_name, 'PhysDom', 'FluxSum', 'A', 'dx', 'dy', 't')
         end
 
         %% Check the time
