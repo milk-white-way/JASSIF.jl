@@ -101,11 +101,11 @@ function [FluxSumOut, Ucont_im_x, Ucont_im_y] = ...
         
         pseudo_t = pseudo_t+1;     
         
-        fprintf('subitr = %d, Momentum convergence error = %8.6f \n', pseudo_t, err); 
+        fprintf('subitr = %d, Momentum convergence error = %10e \n', pseudo_t, err); 
     end 
     
     if (err > 1e-1)
-        fprintf('time = %d, Momentum solver does not converge e = %8.6f \n', time, err);
+        fprintf('time = %d, Momentum solver does not converge e = %10e \n', time, err);
     end
 
 end

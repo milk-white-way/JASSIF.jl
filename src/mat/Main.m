@@ -1,46 +1,36 @@
-function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
-    Main(M, N) % Get rid of HaloDom for production run
+function [PhysDom, FluxSum, A, dx, dy, t] = Main()
 
     close all; 
     format shortE;
     format compact;
 
-    IMPORT_HDF5 = 'PostMomentumData.h5';
-    if exist(IMPORT_HDF5, 'file') == 2
-        delete(IMPORT_HDF5);
-    end
+    %% Include Control Parameters
+    control()
 
-    AMRESSIF = 'input';
-    if exist(AMRESSIF, 'file') == 2
-        delete(AMRESSIF);
-    end
-
-    %% Some flags
-    ENABLE_VISUAL_GRID = 0;
-    ENABLE_CALCULATION = 1;
-    ENABLE_VISUAL_PLOT = 1;
-    ENABLE_BC_PERIODIC = 1;
-
-    ENABLE_DEBUGGING = 0;
-
+    %% Extra solver's parameters that for dev
     Nghost = 2;
 
-    %% Physical parameters
-    Re = 1;
-    L = 1;
-    U = 1;
-    %% Solver parameters
-    dt = 1E-5;
-    MAXTIME = 1000;
     %% AMRESSIF parameters
-    max_grid_size = 8;
-    plot_int = 1;
+    if ENABLE_AMRESSIF
+        IMPORT_HDF5 = 'PostMomentumData.h5';
+        if exist(IMPORT_HDF5, 'file') == 2
+            delete(IMPORT_HDF5);
+        end
 
-    if ENABLE_BC_PERIODIC
-        bc_lo = [0, 0];
-        bc_hi = [0, 0];
-    else
-        error('Non-periodic boundary condition is not supported yet!')
+        AMRESSIF = 'input';
+        if exist(AMRESSIF, 'file') == 2
+            delete(AMRESSIF);
+        end
+
+        max_grid_size = 8;
+        plot_int = 1;
+
+        if ENABLE_BC_PERIODIC
+            bc_lo = [0, 0];
+            bc_hi = [0, 0];
+        else
+            error('Non-periodic boundary condition is not supported yet!')
+        end
     end
 
     fprintf('\tJust Another Simulation Suite For Incompressible Flows \n');
@@ -83,25 +73,27 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     end
     toc;
 
-    % Optional step: Create input file for AMRESSIF Poisson solver
-    fid = fopen(AMRESSIF, 'w');
-        fprintf(fid, '#Hello, from JASSIF! \n');
-        fprintf(fid, 'n_cell = %d \n', M);
-        fprintf(fid, 'max_grid_size = %d \n', max_grid_size);
-        fprintf(fid, 'plot_int = %d \n', plot_int);
-        fprintf(fid, 'time = %d \n', t);
-        fprintf(fid, 'bc_lo = %d %d \n', bc_lo(1), bc_lo(2));
-        fprintf(fid, 'bc_hi = %d %d \n', bc_hi(1), bc_hi(2));
+    if ENABLE_AMRESSIF
+        %% Write the input file for AMRESSIF
+        fid = fopen(AMRESSIF, 'w');
+            fprintf(fid, '#Hello, from JASSIF! \n');
+            fprintf(fid, 'n_cell = %d \n', M);
+            fprintf(fid, 'max_grid_size = %d \n', max_grid_size);
+            fprintf(fid, 'plot_int = %d \n', plot_int);
+            fprintf(fid, 'time = %d \n', t);
+            fprintf(fid, 'bc_lo = %d %d \n', bc_lo(1), bc_lo(2));
+            fprintf(fid, 'bc_hi = %d %d \n', bc_hi(1), bc_hi(2));
 
-    % Close the file
-    fclose(fid);
+        % Close the file
+        fclose(fid);
+    end
 
     %% Calculation process
     while ENABLE_CALCULATION
+        tic;
         fprintf('\nINFO: \tBegin Calculation... \n');
         for time_step = 1:MAXTIME       
 
-            tic;
             t = time_step * dt;
 
             Ucont_pre_x = CompDom.Ucont_x;
@@ -110,31 +102,30 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
             %% Solve the divergence-free Momentum Equation to obtain next-timestep contravariant velocity components
             [FluxSum, Ucont_im_x, Ucont_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, iphys, iphye, jphys, jphye, Re, dx, dy, dt, t, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
-            %{
-            %% Solve the Poisson Equation to obtain correction field 'phi'
-            % Step 1: Export contravariant velocity components and pressure field to hdf5 file
-            h5create(IMPORT_HDF5, '/Ucont/imx', [N M3]);
-            h5create(IMPORT_HDF5, '/Ucont/imy', [N3 M]);
-            h5create(IMPORT_HDF5, '/UserCtx/p', [N M]);
+            if ENABLE_AMRESSIF
+                %% Solve the Poisson Equation to obtain correction field 'phi'
+                % Step 1: Export contravariant velocity components and pressure field to hdf5 file
+                h5create(IMPORT_HDF5, '/Ucont/imx', [N M3]);
+                h5create(IMPORT_HDF5, '/Ucont/imy', [N3 M]);
+                h5create(IMPORT_HDF5, '/UserCtx/p', [N M]);
 
-            h5write(IMPORT_HDF5, '/Ucont/imx', Ucont_im_x);
-            h5write(IMPORT_HDF5, '/Ucont/imy', Ucont_im_y);
-            h5write(IMPORT_HDF5, '/UserCtx/p', PhysDom.Pressure);
+                h5write(IMPORT_HDF5, '/Ucont/imx', Ucont_im_x);
+                h5write(IMPORT_HDF5, '/Ucont/imy', Ucont_im_y);
+                h5write(IMPORT_HDF5, '/UserCtx/p', PhysDom.Pressure);
 
-            % Step 2: Update time in AMRESSIF input file
-            fid = fopen(AMRESSIF);
-            S = textscan(fid, '%s', 'Delimiter', '\n');
-            fclose(fid);
-            S = S{1};
-            idx = contains(S, 'time');
-            S{idx} = ['time = ' num2str(t)];
-            fid = fopen(AMRESSIF, 'w');
-            fprintf(fid, '%s\n', S{:});
-            fclose(fid);
+                % Step 2: Update time in AMRESSIF input file
+                fid = fopen(AMRESSIF);
+                S = textscan(fid, '%s', 'Delimiter', '\n');
+                fclose(fid);
+                S = S{1};
+                idx = contains(S, 'time');
+                S{idx} = ['time = ' num2str(t)];
+                fid = fopen(AMRESSIF, 'w');
+                fprintf(fid, '%s\n', S{:});
+                fclose(fid);
 
-            % Step 2: Call in the Poisson solver from AMRESSIF source code to solve the Poisson Equation
-
-            %}
+                % Step 2: Call in the Poisson solver from AMRESSIF source code to solve the Poisson Equation
+            end
 
             % Calculate the divergence of the new contraction velocity field
             P_Div_Phys = Divergence(Ucont_im_x, Ucont_im_y, M, N, dx, dy);
@@ -215,17 +206,17 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
 
             % Assess the divergence of flow field
             Div = Divergence(Ucont_new_x, Ucont_new_y, M, N, dx , dy);
-            MaxDiv = norm(Div, inf)
+            MaxDiv = norm(Div, inf);
             
             norm(Vectorize(dU_x), inf);
             fprintf('INFO: \t Time Step No. %d is done where the time is %.4f \n', time_step, t);
-            toc;
         end
 
         if time_step == MAXTIME
             ENABLE_CALCULATION = 0;
         end
     end
+    toc;
 
     %% Post-processing: plot the final results
     if ENABLE_VISUAL_PLOT
