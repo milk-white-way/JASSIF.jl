@@ -9,10 +9,18 @@ Re = 1;
 L = 1;
 U = 1;
 
-%% Options
-ENABLE_VISUAL_GRID  = 0;
+%% Behaviour parameters
+checkpoint_freq = 100;
+checkpoint_path = "."; % Use relative path if you like
+
+%% FLAGS
 ENABLE_CALCULATION  = 1;
-ENABLE_VISUAL_PLOT  = 1;
 ENABLE_BC_PERIODIC  = 1;
+
+%ENABLE_CHECKPOINT   = 1; Future work
+
+ENABLE_VISUAL_GRID  = 0;
+ENABLE_VISUAL_PLOT  = 1;
+
 ENABLE_AMRESSIF     = 0;
 ENABLE_DEBUGGING    = 0;

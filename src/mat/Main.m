@@ -1,4 +1,4 @@
-function [PhysDom, FluxSum, A, dx, dy, t] = Main()
+function Main()
 
     close all; 
     format shortE;
@@ -212,6 +212,18 @@ function [PhysDom, FluxSum, A, dx, dy, t] = Main()
             fprintf('INFO: \t Time Step No. %d is done where the time is %.4f \n', time_step, t);
         end
 
+        %% Writing checkpoints
+        if rem(time_step, checkpoint_freq) == 0
+            dir_name = '/Checkpoints/';
+            if ~exist(dir_name, 'dir')
+                mkdir(dir_name);
+            end
+            full_path = strcat(checkpoint_path, dir_name);
+            full_name = sprintf('%schk_%d.mat', full_path, time_step);
+            save(full_name, 'PhysDom', 'FluxSum', 'A', 'dx', 'dy', 't')
+        end
+
+        %% Check the time
         if time_step == MAXTIME
             ENABLE_CALCULATION = 0;
         end
