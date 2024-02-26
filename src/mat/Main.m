@@ -6,6 +6,12 @@ function Main(control_path, checkpoint_path)
     %% Include Control Parameters
     run(control_path);
     checkpoint_form = num2str(floor(log10(MAXTIME)) + 1);
+    dir_name = '/Checkpoints/';
+    full_path = strcat(checkpoint_path, dir_name);
+    if ~exist(full_path, 'dir')
+        mkdir(full_path);
+    end
+    chkname = strcat('%schk_%0', checkpoint_form, 'd.mat');
 
     %% Extra solver's parameters that for dev
     Nghost = 2;
@@ -56,6 +62,11 @@ function Main(control_path, checkpoint_path)
     tic;
     fprintf('INFO: \tBegin Initialization... ');
     [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
+
+    %% Writing initial configuration as checkpoints
+    full_name = sprintf(chkname, full_path, t);
+    save(full_name, 'PhysDom', 'FluxSum', 'dx', 'dy', 't')
+
     fprintf('Done! \n');
     fprintf('INFO: \tSpatial discretization: dx = %f, dy = %f \n', dx, dy);
 
@@ -214,16 +225,8 @@ function Main(control_path, checkpoint_path)
 
             %% Writing checkpoints
             if rem(time_step, checkpoint_freq) == 0
-                dir_name = '/Checkpoints/';
-                full_path = strcat(checkpoint_path, dir_name);
-
-                if ~exist(full_path, 'dir')
-                    mkdir(full_path);
-                end
-
-                chkname = strcat('%schk_%0', checkpoint_form, 'd.mat');
                 full_name = sprintf(chkname, full_path, time_step);
-                save(full_name, 'PhysDom', 'FluxSum', 'A', 'dx', 'dy', 't')
+                save(full_name, 'PhysDom', 'FluxSum', 'dx', 'dy', 't')
             end
         end
 

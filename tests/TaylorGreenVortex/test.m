@@ -1,23 +1,23 @@
 close all; clearvars; clc;
 
-USE_PRODUTION = 1;
+USE_PRODUTION = 0;
 USE_VALIDATION = 1;
 
-control_path = '/home/milk-white-way/OC/JASSIF.jl/tests/TaylorGreenVortex/control.m';
-checkpoint_path = '/home/milk-white-way/OC/JASSIF.jl/tests/TaylorGreenVortex';
+control_path = 'G:\\RunningCode\JASSIF.jl\tests\TaylorGreenVortex\control.m';
+checkpoint_path = 'G:\\RunningCode\JASSIF.jl\tests\TaylorGreenVortex';
 
 run(control_path);
 
 %% Here I recommend absolute paths
 if USE_PRODUTION
-    solver_path = '/home/milk-white-way/OC/JASSIF.jl/src/mat';
+    solver_path = 'G:\\RunningCode\JASSIF.jl\src\mat';
     solver_exec = strcat( solver_path, '/Main(control_path, checkpoint_path)' );
     run(solver_exec);
 end
 
 if USE_VALIDATION
     %% First is load the result you want to validate
-    filename = 'chk_1000.mat';
+    filename = 'chk_0200.mat';
     load(strcat(checkpoint_path, '/Checkpoints/', filename));
 
     %% After this step, the below is list of noticeble loaded to the workspace
@@ -101,19 +101,19 @@ if USE_VALIDATION
     subplot(1, 3, 1)
         plot(Exact.x, Exact.U, 'k', 'LineWidth', 2);
         hold on;
-        plot(Numel.x, Numel.U, 'o', 'MarkerSize', 12);
+        plot(Numel.x, Numel.U, 'o', 'MarkerSize', 8);
         xlabel('x = y');
         ylabel('U');
     subplot(1, 3, 2)
         plot(Exact.y, Exact.V, 'k', 'LineWidth', 2);
         hold on;
-        plot(Numel.y, Numel.V, 'o', 'MarkerSize', 12);
+        plot(Numel.y, Numel.V, 'o', 'MarkerSize', 8);
         xlabel('x = y');
         ylabel('V');
     subplot(1, 3, 3)
         plot(Exact.x, Exact.P, 'k', 'LineWidth', 2);
         hold on;
-        plot(Numel.x, Numel.P, 'o', 'MarkerSize', 12);
+        plot(Numel.x, Numel.P, 'o', 'MarkerSize', 8);
         xlabel('x = y');
         ylabel('P');
 
