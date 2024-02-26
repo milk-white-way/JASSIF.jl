@@ -144,5 +144,5 @@ function [A] = Poisson_LHS_Neumann(M4, N4, dx, dy)
             sp_vals = [sp_vals vals];
             
     end
-    A = sparse(sp_jj, sp_ii, sp_vals);
+    A = sparse(sp_ii, sp_jj, sp_vals);
 end
