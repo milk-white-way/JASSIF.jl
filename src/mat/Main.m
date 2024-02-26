@@ -18,7 +18,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     %% Some flags
     ENABLE_VISUAL_GRID = 0;
     ENABLE_CALCULATION = 1;
-    ENABLE_VISUAL_PLOT = 0;
+    ENABLE_VISUAL_PLOT = 1;
     ENABLE_BC_PERIODIC = 1;
 
     ENABLE_DEBUGGING = 0;
@@ -30,8 +30,8 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     L = 1;
     U = 1;
     %% Solver parameters
-    dt = 1E-4;
-    MAXTIME = 1;
+    dt = 1E-5;
+    MAXTIME = 1000;
     %% AMRESSIF parameters
     max_grid_size = 8;
     plot_int = 1;
@@ -104,6 +104,9 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
             tic;
             t = time_step * dt;
 
+            Ucont_pre_x = CompDom.Ucont_x;
+            Ucont_pre_y = CompDom.Ucont_y;
+
             %% Solve the divergence-free Momentum Equation to obtain next-timestep contravariant velocity components
             [FluxSum, Ucont_im_x, Ucont_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, iphys, iphye, jphys, jphye, Re, dx, dy, dt, t, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
@@ -136,46 +139,96 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
             % Calculate the divergence of the new contraction velocity field
             P_Div_Phys = Divergence(Ucont_im_x, Ucont_im_y, M, N, dx, dy);
             % Ensemble the right-hand side of the Poisson equation with one layer of ghost cells
-            P_Div = zeros(N2, M2);
+            M4 = M3 + 1;
+            N4 = N3 + 1;
+            P_Div = zeros(N4, M4);
+            P_Div(2:N3, 2:M3) = P_Div_Phys;
 
-            b = zeros(M*N, 1);
-            for ii = 1:M
-                for jj = 1:N
-                    index = glidx(ii, jj, M);
+            % Apply periodic boundary condition
+            P_Div(2:N3, 1) = P_Div_Phys(:, end);
+            P_Div(2:N3, end) = P_Div_Phys(:, 1);
+            P_Div(1, 2:M3) = P_Div_Phys(end, :);
+            P_Div(end, 2:M3) = P_Div_Phys(1, :);
+
+            % Ensemble the RHS vector
+            b = zeros(N4*M4, 1);
+            for ii = 1:M4
+                for jj = 1:N4
+                    index = glidx(ii, jj, M4, N4);
 
                     b(index) = P_Div(jj, ii);
                 end
             end
 
-            A = Poisson_LHS_Neumann(M, N, dx, dy);
-            phi = A\b';
+            % Ensemble the LHS sparse matrix
+            A = Poisson_LHS_Neumann(M4, N4, dx, dy);
 
-            %[phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
+            % Solve the Poisson equation
+            phi = A\b;
 
-            %{
-            [U_x_new, U_y_new, P_new] = Update_Solution(U_im_x, U_im_y, Pressure, phi, dx, dy, dt);
-                
-            %Update dU
-            dU_x = U_x_new - Ucont_x;
-            dU_y = U_y_new - Ucont_y;
-                
-            % Go next time step
-            [Ucat_x, Ucat_y, Ucont_x, Ucont_y] = FormBCS(U_x_new, U_y_new, Ubcs_x, Ubcs_y, dx, dy,Re,t);
-                
-            Pressure = P_new;          
-                
+            % Return the solution to the physical domain
+            for index = 1:M4*N4
+                [ii, jj] = lidx(index, M4);
+                a_Phi(jj, ii) = phi(index);
+            end
+
+            % Calculate the gradient of phi
+            for ii = 1:M3
+                for jj = 1:N
+                    PGrad_x(jj, ii) = (a_Phi(jj, ii+1) - a_Phi(jj, ii))/dx;
+                end
+            end
+
+            for ii = 1:M
+                for jj = 1:N3
+                    PGrad_y(jj, ii) = (a_Phi(jj+1, ii) - a_Phi(jj, ii))/dy;
+                end
+            end
+
+            % Update corrected contravariant velocity components
+            Ucont_new_x = Ucont_im_x - PGrad_x*dt/1.5;
+            Ucont_new_y = Ucont_im_y - PGrad_y*dt/1.5;
+
+            % Update dU
+            dU_x = Ucont_new_x - Ucont_pre_x;
+            dU_y = Ucont_new_y - Ucont_pre_y;
+
+            %% Update all new fields to physical domain
+            % Update pressure field
+            for ii = 1:M
+                for jj = 1:N
+                    PhysDom.Pressure(jj, ii) = PhysDom.Pressure(jj, ii) + a_Phi(jj+1, ii+1);
+                end
+            end
+
+            % Update Carterian velocity components
+            [Ucat_new_x, Ucat_new_y] = Contra_To_Cart(Ucont_new_x, Ucont_new_y, M, N);
+            PhysDom.Ucat_x = Ucat_new_x;
+            PhysDom.Ucat_y = Ucat_new_y;
+
+            %% Ensemble the computational domain before next time step
+            CompDom.Ucont_x = Ucont_new_x;
+            CompDom.Ucont_y = Ucont_new_y;
+
+            %% Enforce boundary conditions
+            [CompDom, ~, ~, ~, ~, ~, ~] = TAM_enforce_bcs_v2(PhysDom, CompDom, M, N, M2, N2, Nghost, iphys, iphye, jphys, jphye, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
+
             % Assess the divergence of flow field
-            Div = Divergence(U_x_new, U_y_new,dx ,dy);
+            Div = Divergence(Ucont_new_x, Ucont_new_y, M, N, dx , dy);
             MaxDiv = norm(Div, inf)
             
-            norm(Vectorize(dU_x), inf)
-            %}
-            fprintf('INFO: \t Time step %d is done! \n', time_step);
+            norm(Vectorize(dU_x), inf);
+            fprintf('INFO: \t Time Step No. %d is done where the time is %.4f \n', time_step, t);
             toc;
         end
 
         if time_step == MAXTIME
             ENABLE_CALCULATION = 0;
         end
+    end
+
+    %% Post-processing: plot the final results
+    if ENABLE_VISUAL_PLOT
+        TAM_myplot();
     end
 end

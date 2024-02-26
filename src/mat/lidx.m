@@ -1,13 +1,12 @@
-function [jj, ii] = lidx(index, M)
+function [ii, jj] = lidx(index, M4)
 
-    ii = floor(index / M);
-    jj = index - (M * ii);
+    jj = floor(index / M4);
+    ii = index - (M4 * jj);
 
-    if (jj ~= 0)
-        ii = ii + 1;
+    if (ii ~= 0)
+        jj = jj + 1;
     else
-        ii = M;
+        ii = M4;
     end
 
 end
-

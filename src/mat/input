@@ -1,5 +1,5 @@
 #Hello, from JASSIF! 
-n_cell = 4 
+n_cell = 32 
 max_grid_size = 8 
 plot_int = 1 
 time = 0 

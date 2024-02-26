@@ -1,8 +1,8 @@
-function index = glidx(i, j, M)
-    index = (j-1)*M + i;
+function index = glidx(ii, jj, M, N)
+    % Tam N: Passed
+    index = (jj-1)*M + ii;
 
-% Check the validity of the result 
-% Return 0 for null
-%if (i < 1 || i > M ||j <1 ||j>N) 
-%    index = 0;
+    if (ii < 1 || ii > M || jj < 1 ||jj > N) 
+        index = 0;
+    end
 end

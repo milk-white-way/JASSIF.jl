@@ -22,7 +22,7 @@ function [FluxSumOut, Ucont_im_x, Ucont_im_y] = ...
     while (pseudo_t < 30 && err > tol)
         
         Ucont_im_x = Ucont_ig_x;
-        Ucont_im_y = Ucont_ig_y  
+        Ucont_im_y = Ucont_ig_y; 
 
         Ucat_im_x = Ucat_ig_x;
         Ucat_im_y = Ucat_ig_y;
