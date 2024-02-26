@@ -5,7 +5,9 @@
 #include <iostream>
 #include <fstream>
 
-// ===================== UTILITY | CONVERSION  =====================
+#include "hdf5.h"
+
+// ===================== UTILITY | CONVERSION  ===========================
 void cart2cont (amrex::MultiFab& velCart,
                 amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>& velCont);
 
@@ -13,7 +15,12 @@ void cont2cart (amrex::MultiFab& velCart,
                 amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>& velCont,
                 amrex::Geometry const& geom);
 
-// ===================== UTILITY | EXTRACT LINE SOLUTION  =====================
+// ===================== UTILITY | IMPORT HDF5 DATA  =====================
+void import_matlab_hdf5 (amrex::MultiFab& userCtx,
+                         amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>& velCont,
+                         amrex::Geometry const& geom);
+
+// ===================== UTILITY | EXTRACT LINE SOLUTION  ================
 void write_midline_solution (amrex::Real const& midx,
                              amrex::Real const& midy,
                              amrex::Real const& mdlu,
@@ -24,7 +31,7 @@ void write_midline_solution (amrex::Real const& midx,
                              double const& anap,
                              int const& current_step);
 
-// ===================== UTILITY | EXPORT  =====================
+// ===================== UTILITY | EXPORT  ===============================
 void Export_Fluxes (amrex::MultiFab& fluxConvect,
                     amrex::MultiFab& fluxViscous,
                     amrex::MultiFab& fluxPrsGrad,

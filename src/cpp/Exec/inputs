@@ -1,0 +1,21 @@
+nsteps = 1000
+plot_int = 50
+n_cell = 33
+max_grid_size = 33
+
+cfl = 3 
+IterNum = 16
+
+ren = 1
+vis = 1
+
+# phy_bc params declare the type of wall
+# 0 - periodic
+# -1 - non-slip
+# 1 - slip
+
+bc_lo = 0 0
+bc_hi = 0 0
+
+amrex.v = 1
+amrex.async_out = 0  # If we use more than 64 processes, async_out will require MPI_THREAD_MULTIPLE

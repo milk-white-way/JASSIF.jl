@@ -12,9 +12,9 @@
 #include "main.H"
 
 // Modulization library
-#include "fn_init.H"
 #include "fn_rhs.H"
 #include "poisson.H"
+#include "utilities.H"
 
 using namespace amrex;
 
@@ -119,16 +119,17 @@ void main_main ()
 
     // Ncomp = number of components for userCtx
     int Ncomp = 2;
-    // UserContext MultiFab contains 2 components, pressure and Phi, at the cell center
 
     // How Boxes are distrubuted among MPI processes
     // Distribution mapping between the processors
     DistributionMapping dm(ba);
 
-    MultiFab userCtx(ba, dm, Ncomp, Nghost);
+    // UserContext MultiFab contains 2 components, pressure and Phi, at the cell center
+    MultiFab userCtx(ba, dm, Ncomp, 0);
+    MultiFab velCart(ba, dm, AMREX_SPACEDIM, 0);
 
-    MultiFab poisson_rhs(ba, dm, 1, 1);
-    MultiFab poisson_sol(ba, dm, 1, 1);
+    MultiFab poisson_rhs(ba, dm, 1, 0);
+    MultiFab poisson_sol(ba, dm, 1, 0);
 
     //---------------------------------------------------------------
     // Defining the boundary conditions for each face of the domain
@@ -187,42 +188,34 @@ void main_main ()
         edge_ba.surroundingNodes(dir);
 
         velCont[dir].define(edge_ba, dm, 1, 0);
-
-        velHat[dir].define(edge_ba, dm, 1, 0);
-        velHatDiff[dir].define(edge_ba, dm, 1, 0);
-        velStar[dir].define(edge_ba, dm, 1, 0);
-        velStarDiff[dir].define(edge_ba, dm, 1, 0);
-
         grad_phi[dir].define(edge_ba, dm, 1, 0);
     }
 
     // Print desired variables for debugging
     amrex::Print() << "INFO| number of dimensions: " << AMREX_SPACEDIM << "\n";
     amrex::Print() << "INFO| geometry: " << geom << "\n";
-    amrex::Print() << "PARAMS| number of ghost cells for each array: " << Nghost << "\n";
-    amrex::Print() << "PARAMS| number of components for each array: " << Ncomp << "\n";
-
-    //--------------------------------------------------------------------------------------//
-    // =-=-=-=-=-=-=-=-=-=-=-=-=-=-= Initialization =-=-=-=-=-=-=-=-=-=-=-=-=-=-------------//
-    //--------------------------------------------------------------------------------------//
+    amrex::Print() << "INFO| velCont[0] size: " << velCont[0].size() << "\n";
 
     amrex::Print() << "========================= IMPORT DATA STEP ========================= \n";
     // Current: Taylor-Green Vortex initial conditions
     // How partial periodic boundary conditions can be deployed?
-    import_matlab_hdf5(userCtx, velCart, velCartDiff, velContDiff, geom);
 
-    MultiFab::Copy(poisson_sol, userCtx, 1, 0, 1, 1);
+    // Importing the data from the HDF5 file
+    // The pressure field is temporarily stored in the poisson_sol MultiFab
+    import_matlab_hdf5(poisson_sol, velCont, geom);
 
-    //ren = ren*Real(2.0)*M_PI;
-    amrex::Print() << "INFO| Reynolds number from length scale: " << ren << "\n";
+    //cont2cart(velCart, velCont, geom);
+
+    //WriteSingleLevelPlotfile("pltPressure", poisson_sol, {"imp"}, geom, time, 0);
+
+    // Transfer the pressure field to the userCtx MultiFab
+    //MultiFab::Copy(userCtx, poisson_sol, 0, 0, 1, 0);
+    // Reset the correction term - phi - to zero
+    //poisson_sol.setVal(0.0);
+    // Save phi to the userCtx MultiFab
+    //MultiFab::Copy(userCtx, poisson_sol, 0, 1, 1, 0);
     
-    // Write a plotfile of the initial data if plot_int > 0
-    // (plot_int was defined in the inputs file)
-    if (plot_int > 0)
-    {
-        Export_Flow_Field("pltInit", userCtx, velCart, ba, dm, geom, time, 0);
-    }
-
+/*
     for (int n = 1; n <= nsteps; ++n)
     {
         amrex::Print() << "============================ ADVANCE STEP " << n << " ============================ \n";
@@ -238,23 +231,24 @@ void main_main ()
         poisson_sol.FillBoundary(geom.periodicity());
         poisson_advance(poisson_sol, poisson_rhs, geom, ba, dm, bc);
         amrex::Print() << "SOLVING| finished solving Poisson equation. \n";
-
+*/
         // Write a plotfile of the current data (plot_int was defined in the inputs file)
-        if (plot_int > 0 && n%plot_int == 0)
-        {
-            Export_Flow_Field("pltResults", userCtx, velCart, ba, dm, geom, time, n);
-        }
+        //if (plot_int > 0)
+        //{
+        //    Export_Flow_Field("pltResults", userCtx, velCart, ba, dm, geom, time, 0);
+        //}
 
         amrex::Print() << "========================== FINISH TIME: " << time << " ========================== \n";
-
+/*
     }//end of time loop - this is the (n) loop!
+*/
 
     // Call the timer again and compute the maximum difference
     // between the start time and stop time
     // over all processors
     auto stop_time = ParallelDescriptor::second() - strt_time;
     const int IOProc = ParallelDescriptor::IOProcessorNumber();
-    ParallelDescriptor::ReduceRealMax(stop_time,IOProc);
+    ParallelDescriptor::ReduceRealMax(stop_time, IOProc);
 
     // Tell the I/O Processor to write out the "run time"
     amrex::Print() << "Run time = " << stop_time << std::endl;

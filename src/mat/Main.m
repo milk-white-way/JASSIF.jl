@@ -5,7 +5,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     format shortE;
     format compact;
 
-    IMPORT_HDF5 = 'ImplicitRK.h5';
+    IMPORT_HDF5 = 'PostMomentumData.h5';
     if exist(IMPORT_HDF5, 'file') == 2
         delete(IMPORT_HDF5);
     end
@@ -34,7 +34,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
     MAXTIME = 1;
     %% AMRESSIF parameters
     max_grid_size = 8;
-    plot_init = 1;
+    plot_int = 1;
 
     if ENABLE_BC_PERIODIC
         bc_lo = [0, 0];
@@ -88,7 +88,7 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
         fprintf(fid, '#Hello, from JASSIF! \n');
         fprintf(fid, 'n_cell = %d \n', M);
         fprintf(fid, 'max_grid_size = %d \n', max_grid_size);
-        fprintf(fid, 'plot_init = %d \n', plot_init);
+        fprintf(fid, 'plot_int = %d \n', plot_int);
         fprintf(fid, 'time = %d \n', t);
         fprintf(fid, 'bc_lo = %d %d \n', bc_lo(1), bc_lo(2));
         fprintf(fid, 'bc_hi = %d %d \n', bc_hi(1), bc_hi(2));
@@ -107,19 +107,20 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
             %% Solve the divergence-free Momentum Equation to obtain next-timestep contravariant velocity components
             [FluxSum, Ucont_im_x, Ucont_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, iphys, iphye, jphys, jphye, Re, dx, dy, dt, t, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
+            %{
             %% Solve the Poisson Equation to obtain correction field 'phi'
             % Step 1: Export contravariant velocity components and pressure field to hdf5 file
             h5create(IMPORT_HDF5, '/Ucont/imx', [N M3]);
             h5create(IMPORT_HDF5, '/Ucont/imy', [N3 M]);
-            h5create(IMPORT_HDF5, '/Pressure', [N M]);
+            h5create(IMPORT_HDF5, '/UserCtx/p', [N M]);
 
             h5write(IMPORT_HDF5, '/Ucont/imx', Ucont_im_x);
             h5write(IMPORT_HDF5, '/Ucont/imy', Ucont_im_y);
-            h5write(IMPORT_HDF5, '/Pressure', PhysDom.Pressure);
+            h5write(IMPORT_HDF5, '/UserCtx/p', PhysDom.Pressure);
 
             % Step 2: Update time in AMRESSIF input file
-            fid = fopen(AMRESSIF, 'w');
-            S = textscan(fid, '%s');
+            fid = fopen(AMRESSIF);
+            S = textscan(fid, '%s', 'Delimiter', '\n');
             fclose(fid);
             S = S{1};
             idx = contains(S, 'time');
@@ -129,6 +130,26 @@ function [PhysDom, CompDom, HaloDom, FluxSum, dx, dy, t] = ...
             fclose(fid);
 
             % Step 2: Call in the Poisson solver from AMRESSIF source code to solve the Poisson Equation
+
+            %}
+
+            % Calculate the divergence of the new contraction velocity field
+            P_Div_Phys = Divergence(Ucont_im_x, Ucont_im_y, M, N, dx, dy);
+            % Ensemble the right-hand side of the Poisson equation with one layer of ghost cells
+            P_Div = zeros(N2, M2);
+
+            b = zeros(M*N, 1);
+            for ii = 1:M
+                for jj = 1:N
+                    index = glidx(ii, jj, M);
+
+                    b(index) = P_Div(jj, ii);
+                end
+            end
+
+            A = Poisson_LHS_Neumann(M, N, dx, dy);
+            phi = A\b';
+
             %[phi] = Poisson_Solver(U_im_x, U_im_y, dx, dy, dt);
 
             %{

@@ -45,6 +45,80 @@ void cont2cart (MultiFab& velCart,
     average_face_to_cellcenter(velCart, amrex::GetArrOfConstPtrs(velCont), geom);
 }
 
+void import_matlab_hdf5 (MultiFab& userCtx,
+                         Array<MultiFab, AMREX_SPACEDIM>& velCont,
+                         Geometry const& geom)
+{
+    Print() << "Importing data from MATLAB\n";
+
+    // Construct the filename
+    std::string fullname = "PostMomentumData";
+    fullname += ".h5";
+
+    hid_t fid, grp, dset;
+    int ret;
+
+    // Open the file
+    fid = H5Fopen(fullname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+    if (fid < 0)
+    {
+        amrex::Abort("Error: could not open HDF5 file");
+    }
+
+    // Open Contravariant velocities group
+    std::string gname = "Ucont";
+    grp = H5Gopen(fid, gname.c_str(), H5P_DEFAULT);
+    if (grp < 0)
+    {
+        amrex::Abort("Error: could not open HDF5 group containing contravariant velocities");
+    }
+
+    // Read the dataset
+    std::string dname = "imx";
+    dset = H5Dopen(grp, dname.c_str(), H5P_DEFAULT);
+    ret = H5Dread(dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(velCont[1]));
+    if (ret < 0)
+    {
+        amrex::Abort("Error: could not read HDF5 dataset for x-velocity");
+    }
+    H5Dclose(dset);
+
+    dname = "imy";
+    dset = H5Dopen(grp, dname.c_str(), H5P_DEFAULT);
+    ret = H5Dread(dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(velCont[0]));
+    if (ret < 0)
+    {
+        amrex::Abort("Error: could not read HDF5 dataset for y-velocity");
+    }
+    H5Dclose(dset);
+    H5Gclose(grp);
+
+    // Open Pressure group
+    gname = "UserCtx";
+    grp = H5Gopen(fid, gname.c_str(), H5P_DEFAULT);
+    if (grp < 0)
+    {
+        amrex::Abort("Error: could not open HDF5 group containing pressure");
+    }
+
+    // Read the dataset
+    dname = "p";
+    dset = H5Dopen(grp, dname.c_str(), H5P_DEFAULT);
+    ret = H5Dread(dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &userCtx);
+    if (ret < 0)
+    {
+        amrex::Abort("Error: could not read HDF5 dataset for pressure");
+    }
+    H5Dclose(dset);
+    H5Gclose(grp);
+
+    // Close the file
+    H5Fclose(fid);
+
+    Print() << "Data imported successfully\n";
+
+}
+
 // ===================== UTILITY | EXTRACT LINE SOLUTION  =====================
 void write_midline_solution (Real const& midx,
                              Real const& midy,
