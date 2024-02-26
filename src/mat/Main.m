@@ -1,11 +1,10 @@
-function Main()
+function Main(control_path, checkpoint_path)
 
-    close all; 
     format shortE;
     format compact;
 
     %% Include Control Parameters
-    control(); % I think it is better to load it during a test
+    run(control_path);
     checkpoint_form = num2str(floor(log10(MAXTIME)) + 1);
 
     %% Extra solver's parameters that for dev
@@ -154,6 +153,7 @@ function Main()
 
             % Ensemble the LHS sparse matrix
             A = Poisson_LHS_Neumann(M4, N4, dx, dy);
+            A = A';
 
             % Solve the Poisson equation
             phi = A\b;
