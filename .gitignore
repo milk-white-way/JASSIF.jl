@@ -3,4 +3,4 @@ src/cpp/Exec/tmp_build_dir
 src/cpp/Exec/main2d.gnu.MPI.ex
 
 tests/TaylorGreenVortex/Checkpoints
-tests/TaylorGreenVortex/plt*
+tests/TaylorGreenVortex/Plots

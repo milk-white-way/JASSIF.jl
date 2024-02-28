@@ -1,23 +1,23 @@
 close all; clearvars; clc;
 
-USE_PRODUTION = 0;
-USE_VALIDATION = 1;
+USE_PRODUTION = 1;
+USE_VALIDATION = 0;
 
-control_path = 'G:\\RunningCode\JASSIF.jl\tests\TaylorGreenVortex\control.m';
-checkpoint_path = 'G:\\RunningCode\JASSIF.jl\tests\TaylorGreenVortex';
+control_path = '<path-to-jassif-folder>/tests/TaylorGreenVortex/control.m';
+checkpoint_path = '<path-to-checkpoint-folder>';
 
 run(control_path);
 
 %% Here I recommend absolute paths
 if USE_PRODUTION
-    solver_path = 'G:\\RunningCode\JASSIF.jl\src\mat';
+    solver_path = '<path-to-jassif-folder/src/mat';
     solver_exec = strcat( solver_path, '/Main(control_path, checkpoint_path)' );
     run(solver_exec);
 end
 
 if USE_VALIDATION
     %% First is load the result you want to validate
-    filename = 'chk_0200.mat';
+    filename = 'chk_<frame-name>.mat';
     load(strcat(checkpoint_path, '/Checkpoints/', filename));
 
     %% After this step, the below is list of noticeble loaded to the workspace
