@@ -1,5 +1,8 @@
 function [CompDomOut, HaloDom, Ucat_comp_x, Ucat_comp_y, Pressure_comp, Ucont_x, Ucont_y] = ...
-    TAM_enforce_bcs_v2(PhysDom, CompDomIn, M, N, M2, N2, Nghost, iphys, iphye, jphys, jphye, IS_PERIODIC, DEBUG)
+    TAM_enforce_bcs_v2(M, N, M2, N2, Nghost, ...
+                        PhysDom, CompDomIn, ...
+                        iphys, iphye, jphys, jphye, ...
+                        IS_PERIODIC, DEBUG)
 
     %% Version 2:
     %       + Is a function now
@@ -7,36 +10,36 @@ function [CompDomOut, HaloDom, Ucat_comp_x, Ucat_comp_y, Pressure_comp, Ucont_x,
     %       + Also includes the interpolation of the face-centered velocities
 
     %% Allocate local variables
-    HaloDom.Ubcs_x = nan(N2,M2);
-    HaloDom.Ubcs_y = nan(N2,M2);
-    HaloDom.Pbcs   = nan(N2,M2);
+    HaloDom.Ubcs_x = nan(M2, N2);
+    HaloDom.Ubcs_y = nan(M2, N2);
+    HaloDom.Pbcs   = nan(M2, N2);
 
     Ucont_x = CompDomIn.Ucont_x;
     Ucont_y = CompDomIn.Ucont_y;
 
-    Ucat_comp_x   = nan(N2,M2);
-    Ucat_comp_y   = nan(N2,M2);
-    Pressure_comp = nan(N2,M2);
+    Ucat_comp_x   = nan(M2, N2);
+    Ucat_comp_y   = nan(M2, N2);
+    Pressure_comp = nan(M2, N2);
 
-    Ucat_comp_x(jphys:jphye, iphys:iphye) = PhysDom.Ucat_x(1:N, 1:M);
-    Ucat_comp_y(jphys:jphye, iphys:iphye) = PhysDom.Ucat_y(1:N, 1:M);
-    Pressure_comp(jphys:jphye, iphys:iphye) = PhysDom.Pressure(1:N, 1:M);
+    Ucat_comp_x(iphys:iphye, jphys:jphye) = PhysDom.Ucat_x(1:M, 1:N);
+    Ucat_comp_y(iphys:iphye, jphys:jphye) = PhysDom.Ucat_y(1:M, 1:N);
+    Pressure_comp(iphys:iphye, jphys:jphye) = PhysDom.Pressure(1:M, 1:N);
 
     if IS_PERIODIC
-        HaloDom.Ubcs_x(1:Nghost   , iphys:iphye) = Ucat_comp_x(jphye-Nghost+1:jphye, iphys:iphye); % South
-        HaloDom.Ubcs_x(jphye+1:N2 , iphys:iphye) = Ucat_comp_x(jphys:jphys+Nghost-1, iphys:iphye); % North
-        HaloDom.Ubcs_x(jphys:jphye,    1:Nghost) = Ucat_comp_x(jphys:jphye, iphye-Nghost+1:iphye); % West
-        HaloDom.Ubcs_x(jphys:jphye,  iphye+1:M2) = Ucat_comp_x(jphys:jphye, iphys:iphys+Nghost-1); % East
+        HaloDom.Ubcs_x(iphys:iphye,    1:Nghost) = Ucat_comp_x(iphys:iphye, jphye-Nghost+1:jphye); % South
+        HaloDom.Ubcs_x(iphys:iphye,  jphye+1:N2) = Ucat_comp_x(iphys:iphye, jphys:jphys+Nghost-1); % North
+        HaloDom.Ubcs_x(1:Nghost   , jphys:jphye) = Ucat_comp_x(iphye-Nghost+1:iphye, jphys:jphye); % West
+        HaloDom.Ubcs_x(iphye+1:M2 , jphys:jphye) = Ucat_comp_x(iphys:iphys+Nghost-1, jphys:jphye); % East
 
-        HaloDom.Ubcs_y(1:Nghost   , iphys:iphye) = Ucat_comp_y(jphye-Nghost+1:jphye, iphys:iphye); % South
-        HaloDom.Ubcs_y(jphye+1:N2 , iphys:iphye) = Ucat_comp_y(jphys:jphys+Nghost-1, iphys:iphye); % North
-        HaloDom.Ubcs_y(jphys:jphye,    1:Nghost) = Ucat_comp_y(jphys:jphye, iphye-Nghost+1:iphye); % West
-        HaloDom.Ubcs_y(jphys:jphye,  iphye+1:M2) = Ucat_comp_y(jphys:jphye, iphys:iphys+Nghost-1); % East
+        HaloDom.Ubcs_y(iphys:iphye,    1:Nghost) = Ucat_comp_y(iphys:iphye, jphye-Nghost+1:jphye); % South
+        HaloDom.Ubcs_y(iphys:iphye,  jphye+1:N2) = Ucat_comp_y(iphys:iphye, jphys:jphys+Nghost-1); % North
+        HaloDom.Ubcs_y(1:Nghost   , jphys:jphye) = Ucat_comp_y(iphye-Nghost+1:iphye, jphys:jphye); % West
+        HaloDom.Ubcs_y(iphye+1:M2 , jphys:jphye) = Ucat_comp_y(iphys:iphys+Nghost-1, jphys:jphye); % East
 
-        HaloDom.Pbcs(1:Nghost   , iphys:iphye)   = Pressure_comp(jphye-Nghost+1:jphye, iphys:iphye); % South
-        HaloDom.Pbcs(jphye+1:N2 , iphys:iphye)   = Pressure_comp(jphys:jphys+Nghost-1, iphys:iphye); % North
-        HaloDom.Pbcs(jphys:jphye,    1:Nghost)   = Pressure_comp(jphys:jphye, iphye-Nghost+1:iphye); % West
-        HaloDom.Pbcs(jphys:jphye,  iphye+1:M2)   = Pressure_comp(jphys:jphye, iphys:iphys+Nghost-1); % East
+        HaloDom.Pbcs(iphys:iphye,    1:Nghost) = Pressure_comp(iphys:iphye, jphye-Nghost+1:jphye); % South
+        HaloDom.Pbcs(iphys:iphye,  jphye+1:N2) = Pressure_comp(iphys:iphye, jphys:jphys+Nghost-1); % North
+        HaloDom.Pbcs(1:Nghost   , jphys:jphye) = Pressure_comp(iphye-Nghost+1:iphye, jphys:jphye); % West
+        HaloDom.Pbcs(iphye+1:M2 , jphys:jphye) = Pressure_comp(iphys:iphys+Nghost-1, jphys:jphye); % East
 
         if DEBUG
             fprintf('INFO: \tPERIODIC BOUNDARY CONDITIONS ENFORCED SUCCESSFULLY!\n');
@@ -50,19 +53,19 @@ function [CompDomOut, HaloDom, Ucat_comp_x, Ucat_comp_y, Pressure_comp, Ucont_x,
     % For Non-staggered grid
     for ii = 1:M2
         for jj = 1:N2
-            if (ii <= Nghost) || (ii > (M + Nghost)) || (jj <= Nghost) || (jj > (N + Nghost))
-                Ucat_comp_x(jj, ii)   = HaloDom.Ubcs_x(jj, ii);
-                Ucat_comp_y(jj, ii)   = HaloDom.Ubcs_y(jj, ii);
-                Pressure_comp(jj, ii) = HaloDom.Pbcs(jj, ii);
+            if ( ii <= Nghost) || (ii > (M + Nghost)) || (jj <= Nghost) || (jj > (N + Nghost) )
+                Ucat_comp_x(ii, jj)   = HaloDom.Ubcs_x(ii, jj);
+                Ucat_comp_y(ii, jj)   = HaloDom.Ubcs_y(ii, jj);
+                Pressure_comp(ii, jj) = HaloDom.Pbcs(ii, jj);
             end
         end
     end
 
     % For Staggered grid
-    Ucont_x(:, 1)   = 0.5 * ( Ucat_comp_x(jphys:jphye, iphys) + Ucat_comp_x(jphys:jphye, iphys-1) ); % West
-    Ucont_x(:, end) = 0.5 * ( Ucat_comp_x(jphys:jphye, iphye) + Ucat_comp_x(jphys:jphye, iphye+1) ); % East
-    Ucont_y(1, :)   = 0.5 * ( Ucat_comp_y(jphys, iphys:iphye) + Ucat_comp_y(jphys-1, iphys:iphye) ); % South
-    Ucont_y(end, :) = 0.5 * ( Ucat_comp_y(jphye, iphys:iphye) + Ucat_comp_y(jphye+1, iphys:iphye) ); % North 
+    Ucont_x(1, :)   = 0.5 * ( Ucat_comp_x(iphys, jphys:jphye) + Ucat_comp_x(iphys-1, jphys:jphye) ); % West
+    Ucont_x(end, :) = 0.5 * ( Ucat_comp_x(iphye, jphys:jphye) + Ucat_comp_x(iphye+1, jphys:jphye) ); % East
+    Ucont_y(:, 1)   = 0.5 * ( Ucat_comp_y(iphys:iphye, jphys) + Ucat_comp_y(iphys:iphye, jphys-1) ); % South
+    Ucont_y(:, end) = 0.5 * ( Ucat_comp_y(iphys:iphye, jphye) + Ucat_comp_y(iphys:iphye, jphye+1) ); % North 
 
     % Ensemble the output structures
     CompDomOut.Ucat_x = Ucat_comp_x;

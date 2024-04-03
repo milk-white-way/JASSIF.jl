@@ -1,4 +1,4 @@
-function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye, dx, dy] = ...
+function [PhysDom, CompDom, M2, N2, M3, N3, iphys, iphye, jphys, jphye, dx, dy] = ...
     Init(M, N, Nghost, L, U, VISUAL_GRID)
     if VISUAL_GRID
         coord_cell_centered.x = [];
@@ -35,10 +35,10 @@ function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye,
     %==================================
 
     %% Allocate memory for the components
-    Ucont_x = nan(N, M3);
-    Ucont_y = nan(N3, M);
+    Ucont_x = nan(M3, N);
+    Ucont_y = nan(M, N3);
 
-    Pressure_phys = nan(N, M);
+    Pressure_phys = nan(M, N);
 
     %% Init face-centered velocity components
     %========= x-component =========
@@ -48,7 +48,7 @@ function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye,
             x = (i -1) * dx;
             y = (j -1 + 0.5) * dy;                
             
-            Ucont_x(j, i) =  U * sin( 2*pi*x ) * cos( 2*pi*y );
+            Ucont_x(i, j) =  U * sin( 2*pi*x ) * cos( 2*pi*y );
 
             if VISUAL_GRID
                 %TAM_savecoorddinates('coord_face_centered_x.csv', x, y); % Old way, slow way
@@ -65,7 +65,7 @@ function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye,
             x = (i -1 +0.5) * dx;
             y = (j -1) * dy;        
             
-            Ucont_y(j, i) = -U * cos( 2*pi*x ) * sin( 2*pi*y );
+            Ucont_y(i, j) = -U * cos( 2*pi*x ) * sin( 2*pi*y );
 
             if VISUAL_GRID
                 %TAM_savecoorddinates('coord_face_centered_y.csv', x, y); % Old way, slow way
@@ -76,7 +76,7 @@ function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye,
     end
 
     %% Convert to get the physical domain
-    [Ucat_phys_x, Ucat_phys_y] = Contra_To_Cart(Ucont_x, Ucont_y, M, N);
+    [Ucat_phys_x, Ucat_phys_y] = Contra_To_Cart(M, N, Ucont_x, Ucont_y);
 
     %% Init cell-centered components
     for i = 1:M
@@ -85,7 +85,7 @@ function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye,
             x = (i -1 +0.5) * dx;
             y = (j -1 +0.5) * dy;
             
-            Pressure_phys(j, i) = -0.25 * U^2 * ( cos( 4*pi*x ) + cos( 4*pi*y ) );
+            Pressure_phys(i, j) = 0.25 * U^2 * ( cos( 4*pi*x ) + cos( 4*pi*y ) );
 
             if VISUAL_GRID
                 %TAM_savecoorddinates('coord_cell_centered.csv', x, y); % Old way, slow way
@@ -96,8 +96,8 @@ function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye,
     end
 
     if VISUAL_GRID
-        for j = 1:N2
-            for i = 1:M2
+        for i = 1:M2
+            for j = 1:N2
                 if i <= Nghost || i > (M2-Nghost) || j <= Nghost || j > (N2-Nghost)
                     x = (i -1 - Nghost +0.5) * dx;
                     y = (j -1 - Nghost +0.5) * dy;
@@ -119,13 +119,5 @@ function [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye,
 
     CompDom.Ucont_x = Ucont_x;
     CompDom.Ucont_y = Ucont_y;
-
-    %% Init fluxes
-    FluxSum.Convective.Flux_x   = nan(N2, M2);
-    FluxSum.Convective.Flux_y   = nan(N2, M2);
-    FluxSum.Viscous.Flux_x      = nan(N2, M2);
-    FluxSum.Viscous.Flux_y      = nan(N2, M2);
-    FluxSum.P_Gradient.Flux_x   = nan(N2, M2);
-    FluxSum.P_Gradient.Flux_y   = nan(N2, M2);
-        
+ 
 end

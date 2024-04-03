@@ -4,3 +4,4 @@ src/cpp/Exec/main2d.gnu.MPI.ex
 
 tests/TaylorGreenVortex/Checkpoints
 tests/TaylorGreenVortex/Plots
+tests/TaylorGreenVortex/Backups

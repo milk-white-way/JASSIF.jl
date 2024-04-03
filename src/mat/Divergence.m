@@ -1,13 +1,13 @@
-function [Div] = Divergence(Ucont_x, Ucont_y, M, N, dx ,dy)
+function [Div] = Divergence(M, N, Ucont_x, Ucont_y, dx ,dy)
     % This function does calculate the divergence at every grid node in the
     % Computational domain
 
-    Div = zeros(N, M);
+    Div = zeros(M, N);
 
     for ii = 1:M
         for jj = 1:N
-            Div(jj, ii) = (Ucont_x(jj, ii+1) - Ucont_x(jj, ii)) / dx ...
-                        + (Ucont_y(jj+1, ii) - Ucont_y(jj, ii)) /dy;        
+            Div(ii, jj) = (Ucont_x(ii+1, jj) - Ucont_x(ii, jj)) / dx ...
+                        + (Ucont_y(ii, jj+1) - Ucont_y(ii, jj)) /dy;        
         end
     end
 

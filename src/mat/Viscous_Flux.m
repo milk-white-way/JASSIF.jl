@@ -1,12 +1,14 @@
 function [Viscous_x, Viscous_y] = ...
-    Viscous_Flux(FluxSumOld, Ucat_x, Ucat_y, iphys, iphye, jphys, jphye, dx, dy, Re, DEBUG) % Re is Reynolds number
+    Viscous_Flux(M2, N2, Ucat_x, Ucat_y, ...
+                 iphys, iphye, jphys, jphye, ...
+                 dx, dy, Re, DEBUG) % Re is Reynolds number
 
     if DEBUG
         fprintf('DEBUG: \tCalculation of Fluxes for Viscous Terms\n');
     end
 
-    Viscous_x = FluxSumOld.Viscous.Flux_x;
-    Viscous_y = FluxSumOld.Viscous.Flux_y;
+    Viscous_x = zeros(M2, N2);
+    Viscous_y = zeros(M2, N2);
 
     %% Inner (Physical domain)
     for ii = iphys:iphye
@@ -14,27 +16,27 @@ function [Viscous_x, Viscous_y] = ...
 
             %% ------------- x direction -------------------
             % Central differencing
-            up = Ucat_x(jj, ii);
+            up = Ucat_x(ii, jj);
             % E-W
-            ue = Ucat_x(jj, ii+1);
-            uw = Ucat_x(jj, ii-1);
+            ue = Ucat_x(ii+1, jj);
+            uw = Ucat_x(ii-1, jj);
             % N-S
-            un = Ucat_x(jj+1, ii);
-            us = Ucat_x(jj-1, ii);
+            un = Ucat_x(ii, jj+1);
+            us = Ucat_x(ii, jj-1);
                 
-            Viscous_x(jj, ii) = ( (uw - 2*up + ue)/(dx^2) + (us - 2*up + un)/(dy^2) );
+            Viscous_x(ii, jj) = ( (uw - 2*up + ue)/(dx^2) + (us - 2*up + un)/(dy^2) );
 
             %% ------------- y direction --------------------
             % Central differencing
-            vp = Ucat_y(jj, ii);
+            vp = Ucat_y(ii, jj);
             % E-W
-            ve = Ucat_y(jj, ii+1);
-            vw = Ucat_y(jj, ii-1);
+            ve = Ucat_y(ii+1, jj);
+            vw = Ucat_y(ii-1, jj);
             % N-S
-            vn = Ucat_y(jj+1, ii);
-            vs = Ucat_y(jj-1, ii);
+            vn = Ucat_y(ii, jj+1);
+            vs = Ucat_y(ii, jj-1);
                 
-            Viscous_y(jj, ii) = ( (vw - 2*vp + ve)/(dx^2) + (vs - 2*vp + vn)/(dy^2) );
+            Viscous_y(ii, jj) = ( (vw - 2*vp + ve)/(dx^2) + (vs - 2*vp + vn)/(dy^2) );
 
         end
     end

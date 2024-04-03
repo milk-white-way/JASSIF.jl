@@ -29,7 +29,7 @@ figure()
     axis([0 1 0 1]);
 
 figure()
-    contourf(MyPlot.X, MyPlot.Y, velocity_magnitude);
+    contourf(MyPlot.Y, MyPlot.X, velocity_magnitude);
     colorbar;
     title(['Velocity field at t = ', num2str(MyPlot.time), ' from ', num2str(M), 'x', num2str(N), ' grid with resolution scale of 1:', num2str(1/res_scale)]);
     xlabel('x');

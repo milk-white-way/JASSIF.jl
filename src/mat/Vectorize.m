@@ -1,15 +1,13 @@
 function [Output] = Vectorize(Ucont)
 
-M = length(Ucont(:,1));
-N = length(Ucont(1,:));
+MM = length(Ucont(:,1));
+NN = length(Ucont(1,:));
 % This function Vectorize(U(i,j)) = U(index)
+Output = zeros(MM*NN, 1);
 
-for i = 1:M 
-    for j= 1:N
-        index = glidx(i,j,M,N);
-        Output(index) = Ucont(i,j);
+for ii = 1:MM
+    for jj= 1:NN
+        glb_idx = glidx(MM, NN, ii, jj);
+        Output(glb_idx) = Ucont(ii, jj);
     end
 end
-
-% Transform to column vector
-Output = Output';

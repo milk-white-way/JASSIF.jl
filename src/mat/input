@@ -1,7 +1,0 @@
-#Hello, from JASSIF! 
-n_cell = 16 
-max_grid_size = 8 
-plot_int = 1 
-time = 0 
-bc_lo = 0 0 
-bc_hi = 0 0 

@@ -1,4 +1,4 @@
-function index = glidx(ii, jj, M, N)
+function index = glidx(M, N, ii, jj)
     % Tam N: Passed
     index = (jj-1)*M + ii;
 

@@ -1,13 +1,13 @@
-function Main(control_path, checkpoint_path)
+function Main(control_file_path, working_dir_path)
 
     format shortE;
     format compact;
 
     %% Include Control Parameters
-    run(control_path);
+    run(control_file_path);
     checkpoint_form = num2str(floor(log10(MAXTIME)) + 1);
-    dir_name = '/Checkpoints/';
-    full_path = strcat(checkpoint_path, dir_name);
+    dir_name = strcat('/', 'Checkpoints', '/');
+    full_path = strcat(working_dir_path, dir_name);
     if ~exist(full_path, 'dir')
         mkdir(full_path);
     end
@@ -18,12 +18,12 @@ function Main(control_path, checkpoint_path)
 
     %% AMRESSIF parameters
     if ENABLE_AMRESSIF
-        IMPORT_HDF5 = 'PostMomentumData.h5';
+        IMPORT_HDF5 = strcat(working_dir_path, '/', 'PostMomentumData.h5');
         if exist(IMPORT_HDF5, 'file') == 2
             delete(IMPORT_HDF5);
         end
 
-        AMRESSIF = 'input';
+        AMRESSIF = strcat(working_dir_path, '/', 'input');
         if exist(AMRESSIF, 'file') == 2
             delete(AMRESSIF);
         end
@@ -61,16 +61,16 @@ function Main(control_path, checkpoint_path)
 
     tic;
     fprintf('INFO: \tBegin Initialization... ');
-    [PhysDom, CompDom, FluxSum, M2, N2, M3, N3, iphys, iphye, jphys, jphye, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
+    [PhysDom, CompDom, M2, N2, M3, N3, iphys, iphye, jphys, jphye, dx, dy] = Init(M, N, Nghost, L, U, ENABLE_VISUAL_GRID);
 
     %% Writing initial configuration as checkpoints
     full_name = sprintf(chkname, full_path, t);
-    save(full_name, 'PhysDom', 'FluxSum', 'dx', 'dy', 't')
+    save(full_name, 'PhysDom', 'dx', 'dy', 't')
 
     fprintf('Done! \n');
     fprintf('INFO: \tSpatial discretization: dx = %f, dy = %f \n', dx, dy);
 
-    [CompDom, HaloDom, ~, ~, ~, ~, ~] = TAM_enforce_bcs_v2(PhysDom, CompDom, M, N, M2, N2, Nghost, iphys, iphye, jphys, jphye, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
+    [CompDom, HaloDom, ~, ~, ~, ~, ~] = TAM_enforce_bcs_v2(M, N, M2, N2, Nghost, PhysDom, CompDom, iphys, iphye, jphys, jphye, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
     if ENABLE_VISUAL_GRID
         fprintf('INFO: \tVisualizing grid... ');
@@ -80,6 +80,7 @@ function Main(control_path, checkpoint_path)
     end
 
     if ENABLE_VISUAL_PLOT
+        fprintf('INFO: \tVisualizing initial condition... ');
         TAM_myplot();
     end
     toc;
@@ -111,7 +112,7 @@ function Main(control_path, checkpoint_path)
             Ucont_pre_y = CompDom.Ucont_y;
 
             %% Solve the divergence-free Momentum Equation to obtain next-timestep contravariant velocity components
-            [FluxSum, Ucont_im_x, Ucont_im_y] = Runge_Kutta(CompDom, FluxSum, dU_x, dU_y, M, N, M2, N2, M3, N3, Nghost, iphys, iphye, jphys, jphye, Re, dx, dy, dt, t, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
+            [FluxSum, Ucont_im_x, Ucont_im_y] = Runge_Kutta(M, N, M2, N2, M3, N3, Nghost, CompDom, dU_x, dU_y, iphys, iphye, jphys, jphye, Re, dx, dy, dt, t, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
             if ENABLE_AMRESSIF
                 %% Solve the Poisson Equation to obtain correction field 'phi'
@@ -139,52 +140,56 @@ function Main(control_path, checkpoint_path)
             end
 
             % Calculate the divergence of the new contraction velocity field
-            P_Div_Phys = Divergence(Ucont_im_x, Ucont_im_y, M, N, dx, dy);
-            % Ensemble the right-hand side of the Poisson equation with one layer of ghost cells
-            M4 = M3 + 1;
-            N4 = N3 + 1;
-            P_Div = zeros(N4, M4);
-            P_Div(2:N3, 2:M3) = P_Div_Phys;
-
-            % Apply periodic boundary condition
-            P_Div(2:N3, 1) = P_Div_Phys(:, end);
-            P_Div(2:N3, end) = P_Div_Phys(:, 1);
-            P_Div(1, 2:M3) = P_Div_Phys(end, :);
-            P_Div(end, 2:M3) = P_Div_Phys(1, :);
+            P_Div = Divergence(M, N, Ucont_im_x, Ucont_im_y, dx, dy);
 
             % Ensemble the RHS vector
-            b = zeros(N4*M4, 1);
-            for ii = 1:M4
-                for jj = 1:N4
-                    index = glidx(ii, jj, M4, N4);
+            b = zeros(M*N, 1);
+            for ii = 1:M
+                for jj = 1:N
+                    index = glidx(M, N, ii, jj);
 
-                    b(index) = P_Div(jj, ii);
+                    b(index) = P_Div(ii, jj);
                 end
             end
+            b = b * 1.5 / dt;
 
             % Ensemble the LHS sparse matrix
-            A = Poisson_LHS_Neumann(M4, N4, dx, dy);
-            A = A';
-
+            A = Poisson_LHS_Neumann(M, N, dx, dy);
+            
             % Solve the Poisson equation
             phi = A\b;
 
+            if ENABLE_BC_PERIODIC
+                phi = phi - mean(phi);
+            end
+
             % Return the solution to the physical domain
-            for index = 1:M4*N4
-                [ii, jj] = lidx(index, M4);
-                a_Phi(jj, ii) = phi(index);
+            for index = 1:M*N
+                [ii, jj] = lidx(M, index);
+                a_Phi(ii, jj) = phi(index);
+            end
+
+            %% Correction and Update step
+            % Update pressure field
+            for ii = 1:M
+                for jj = 1:N
+                    PhysDom.Pressure(ii, jj) = PhysDom.Pressure(ii, jj) + a_Phi(ii, jj);
+                end
             end
 
             % Calculate the gradient of phi
-            for ii = 1:M3
+            PGrad_x = zeros(M3, N);
+            PGrad_y = zeros(M, N3);
+
+            for ii = 2:M
                 for jj = 1:N
-                    PGrad_x(jj, ii) = (a_Phi(jj, ii+1) - a_Phi(jj, ii))/dx;
+                    PGrad_x(ii, jj) = (a_Phi(ii, jj) - a_Phi(ii-1, jj))/dx;
                 end
             end
 
             for ii = 1:M
-                for jj = 1:N3
-                    PGrad_y(jj, ii) = (a_Phi(jj+1, ii) - a_Phi(jj, ii))/dy;
+                for jj = 2:N
+                    PGrad_y(ii, jj) = (a_Phi(ii, jj) - a_Phi(ii, jj-1))/dy;
                 end
             end
 
@@ -196,16 +201,8 @@ function Main(control_path, checkpoint_path)
             dU_x = Ucont_new_x - Ucont_pre_x;
             dU_y = Ucont_new_y - Ucont_pre_y;
 
-            %% Update all new fields to physical domain
-            % Update pressure field
-            for ii = 1:M
-                for jj = 1:N
-                    PhysDom.Pressure(jj, ii) = PhysDom.Pressure(jj, ii) + a_Phi(jj+1, ii+1);
-                end
-            end
-
             % Update Carterian velocity components
-            [Ucat_new_x, Ucat_new_y] = Contra_To_Cart(Ucont_new_x, Ucont_new_y, M, N);
+            [Ucat_new_x, Ucat_new_y] = Contra_To_Cart(M, N, Ucont_new_x, Ucont_new_y);
             PhysDom.Ucat_x = Ucat_new_x;
             PhysDom.Ucat_y = Ucat_new_y;
 
@@ -214,10 +211,10 @@ function Main(control_path, checkpoint_path)
             CompDom.Ucont_y = Ucont_new_y;
 
             %% Enforce boundary conditions
-            [CompDom, ~, ~, ~, ~, ~, ~] = TAM_enforce_bcs_v2(PhysDom, CompDom, M, N, M2, N2, Nghost, iphys, iphye, jphys, jphye, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
+            [CompDom, ~, ~, ~, ~, ~, ~] = TAM_enforce_bcs_v2(M, N, M2, N2, Nghost, PhysDom, CompDom, iphys, iphye, jphys, jphye, ENABLE_BC_PERIODIC, ENABLE_DEBUGGING);
 
             % Assess the divergence of flow field
-            Div = Divergence(Ucont_new_x, Ucont_new_y, M, N, dx , dy);
+            Div = Divergence(M, N, Ucont_new_x, Ucont_new_y, dx , dy);
             MaxDiv = norm(Div, inf);
             
             norm(Vectorize(dU_x), inf);

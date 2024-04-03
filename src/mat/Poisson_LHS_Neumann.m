@@ -1,147 +1,118 @@
-function [A] = Poisson_LHS_Neumann(M4, N4, dx, dy)
+function [A] = Poisson_LHS_Neumann(M, N, dx, dy)
 % This function does assemble Poisson LHS 
 % This is Laplacian in 4 points
     % Memory allocation for A
-    A = spalloc(M4*N4, M4*N4, 5);
+    A = spalloc(M*N, M*N, 5);
     sp_ii = [];
     sp_jj = [];
     sp_vals = [];
 
-    for counter = 1:M4*N4
+    for glb_idx = 1:M*N
         % Get local indices
-        [i, j] = lidx(counter, M4);             
+        [i, j] = lidx(M, glb_idx);             
+        loc_idx_P = glb_idx;
 
-        % Find the neighbours
-        indexP = glidx(i  , j  , M4, N4);
-        indexN = glidx(i  , j-1, M4, N4);
-        indexS = glidx(i  , j+1, M4, N4);
-        indexE = glidx(i-1, j  , M4, N4);
-        indexW = glidx(i+1, j  , M4, N4);
+        ii = zeros(1,5);
+        jj = zeros(1,5);
+        vals = zeros(1,5);           
+
+        %% ---------------------- Boundaries --------------------------
+        % ---------------------- Corners --------------------------
+        if ( i==1 && j==1 ) 
+        % South-West corner
+            loc_idx_N = glidx(M, N, i, j+1);    % normal
+            loc_idx_S = glidx(M, N, i, N);      % mirrored
+            loc_idx_E = glidx(M, N, i+1, j);    % normal
+            loc_idx_W = glidx(M, N, M, j);      % mirrored
+
+        elseif ( i==1 && j==N )
+        % North-West corner
+            loc_idx_N = glidx(M, N, i, 1);      % mirrored
+            loc_idx_S = glidx(M, N, i, j-1);    % normal
+            loc_idx_E = glidx(M, N, i+1, j);    % normal
+            loc_idx_W = glidx(M, N, M, j);      % mirrored
+                
+        elseif ( i==M && j==1 )
+        % South-East corner
+            loc_idx_N = glidx(M, N, i, j+1);    % normal
+            loc_idx_S = glidx(M, N, i, N);      % mirrored
+            loc_idx_E = glidx(M, N, 1, j);      % mirrored
+            loc_idx_W = glidx(M, N, i-1, j);    % normal
+
+        elseif ( i==M && j==N )
+        % North-East corner                    
+            loc_idx_N = glidx(M, N, i, 1);      % mirrored
+            loc_idx_S = glidx(M, N, i, j-1);    % normal
+            loc_idx_E = glidx(M, N, 1, j);      % mirrored
+            loc_idx_W = glidx(M, N, i-1, j);    % normal
+
+        % ---------------------- Edges --------------------------
+        elseif ( i==1 && j~=1 && j~=N )               
+        % West minus corners
+            loc_idx_N = glidx(M, N, i, j+1);    % normal
+            loc_idx_S = glidx(M, N, i, j-1);    % normal 
+            loc_idx_E = glidx(M, N, i+1, j);    % normal
+            loc_idx_W = glidx(M, N, M, j);      % mirrored
+
+        elseif ( i==M && j~=1 && j~=N )               
+        % East minus corners
+            loc_idx_N = glidx(M, N, i, j+1);    % normal
+            loc_idx_S = glidx(M, N, i, j-1);    % normal
+            loc_idx_E = glidx(M, N, 1, j);      % mirrored
+            loc_idx_W = glidx(M, N, i-1, j);    % normal
+
+        elseif ( j==1 && i~=1 && i~=M )               
+        % South minus corners
+            loc_idx_N = glidx(M, N, i, j+1);    % normal
+            loc_idx_S = glidx(M, N, i, N);      % mirrored
+            loc_idx_E = glidx(M, N, i+1, j);    % normal
+            loc_idx_W = glidx(M, N, i-1, j);    % normal
+
+        elseif ( j==N && i~=1 && i~=M )               
+        % North minus corners
+            loc_idx_N = glidx(M, N, i, 1);      % mirrored
+            loc_idx_S = glidx(M, N, i, j-1);    % normal
+            loc_idx_E = glidx(M, N, i+1, j);    % normal
+            loc_idx_W = glidx(M, N, i-1, j);    % normal
+                    
+        %% ---------------------- Internal points ---------------------
+        else            
+            % Find the neighbours
+            loc_idx_N = glidx(M, N, i  , j+1);  % normal
+            loc_idx_S = glidx(M, N, i  , j-1);  % normal
+            loc_idx_E = glidx(M, N, i+1, j  );  % normal
+            loc_idx_W = glidx(M, N, i-1, j  );  % normal
+        end
+
+        % point N
+        ii(1) = loc_idx_P;
+        jj(1) = loc_idx_N;
+        vals(1) = 1 / dy^2;
+                
+        % Point E
+        ii(2) = loc_idx_P;
+        jj(2) = loc_idx_E;
+        vals(2) = 1 / dx^2;
+                
+        % Point P            
+        ii(3) = loc_idx_P;
+        jj(3) = loc_idx_P;
+        vals(3) = - 2 / dx^2 - 2 /dy^2;            
+                
+        % Point W
+        ii(4) = loc_idx_P;
+        jj(4) = loc_idx_W;
+        vals(4) = 1 / dx^2;
+                
+        % Point S
+        ii(5) = loc_idx_P;
+        jj(5) = loc_idx_S;
+        vals(5) = 1 / dy^2;            
             
-            if (i >= 2 && i <= M4-1 && j >= 2 && j <= N4-1)            
-                %% ---------------------- Internal points ---------------------
-                
-                ii = zeros(1,5);
-                jj = zeros(1,5);
-                vals = zeros(1,5);           
-                
-                % point N
-                ii(1) = indexP;
-                jj(1) = indexN;
-                vals(1) = 1 / dy^2;
-                
-                % Point E
-                ii(2) = indexP;
-                jj(2) = indexE;
-                vals(2) = 1 / dx^2;
-                
-                % Point P            
-                ii(3) = indexP;
-                jj(3) = indexP;
-                vals(3) = - 2 / dx^2 - 2 /dy^2;            
-                
-                % Point W
-                ii(4) = indexP;
-                jj(4) = indexW;
-                vals(4) = 1 / dx^2;
-                
-                % Point S
-                ii(5) = indexP;
-                jj(5) = indexS;
-                vals(5) = 1 / dy^2;            
-                
-                % Assign phi at p(2,2) = 0 for matrix not to be singular
-                if (i== 2 && j==2)
-                    vals(3) = 0;                           
-                end
-            else
-                %% ---------------------- Boundaries --------------------------
-                % West minus corners
-                if ( i==1 && j~=1 && j~=N4 )               
-                    
-                    ii = zeros(1,2);
-                    jj = zeros(1,2);
-                    vals = zeros(1,2);
-                    
-                    % Point P            
-                    ii(1) = indexP;
-                    jj(1) = indexP;
-                    vals(1) = -1;            
-                    
-                    % Point W
-                    ii(2) = indexP;
-                    jj(2) = indexW;
-                    vals(2) = 1;
-                end 
-                % East minus corners
-                if ( i==M4 && j~=1 && j~=N4 )               
-                    
-                    ii = zeros(1,2);
-                    jj = zeros(1,2);
-                    vals = zeros(1,2);
-                    
-                    % Point P            
-                    ii(1) = indexP;
-                    jj(1) = indexP;
-                    vals(1) = -1;            
-                    
-                    % Point E
-                    ii(2) = indexP;
-                    jj(2) = indexE;
-                    vals(2) = 1;
-                end
-                % South minus corners
-                if ( j==1 && i~=1 && i~=M4 )               
-                    
-                    ii = zeros(1,2);
-                    jj = zeros(1,2);
-                    vals = zeros(1,2);
-                    
-                    % Point P            
-                    ii(1) = indexP;
-                    jj(1) = indexP;
-                    vals(1) = -1;            
-                    
-                    % Point S
-                    ii(2) = indexP;
-                    jj(2) = indexS;
-                    vals(2) = 1;
-                end
-                % North minus corners
-                if ( j==N4 && i~=1 && i~=M4 )               
-                    
-                    ii = zeros(1,2);
-                    jj = zeros(1,2);
-                    vals = zeros(1,2);
-                    
-                    % Point P            
-                    ii(1) = indexP;
-                    jj(1) = indexP;
-                    vals(1) = -1;            
-                    
-                    % Point N
-                    ii(2) = indexP;
-                    jj(2) = indexN;
-                    vals(2) = 1;
-                end 
-                %% ------------------------ Corners ---------------------------
-                if ( i==1 && j==1 || i==1 && j==N4 || i==M4 && j==1 || i==M4 && j==N4 )
-                    
-                    ii = zeros(1,1);
-                    jj = zeros(1,1);
-                    vals = zeros(1,1);
-                    
-                    % Point P            
-                    ii(1) = indexP;
-                    jj(1) = indexP;
-                    vals(1) = 1;        
-                end
-            end
-            
-            % Assemble the matrix 
-            sp_ii = [sp_ii ii];
-            sp_jj = [sp_jj jj];
-            sp_vals = [sp_vals vals];
+        % Assemble the matrix 
+        sp_ii = [sp_ii ii];
+        sp_jj = [sp_jj jj];
+        sp_vals = [sp_vals vals];
             
     end
     A = sparse(sp_ii, sp_jj, sp_vals);

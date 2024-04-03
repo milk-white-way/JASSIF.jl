@@ -1,12 +1,12 @@
-function [ii, jj] = lidx(index, M4)
+function [ii, jj] = lidx(M, glb_idx)
 
-    jj = floor(index / M4);
-    ii = index - (M4 * jj);
+    jj = floor(glb_idx / M);
+    ii = glb_idx - (M * jj);
 
     if (ii ~= 0)
         jj = jj + 1;
     else
-        ii = M4;
+        ii = M;
     end
 
 end
